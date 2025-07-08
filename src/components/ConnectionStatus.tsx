@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
+import { useSleeperData } from "@/hooks/useSleeperData";
 
 export function ConnectionStatus() {
-  const isConnected = false; // Será controlado por contexto/estado global depois
+  const { state } = useSleeperData();
+  const isConnected = state.isConnected;
 
   return (
     <div className="p-3 border-t">
@@ -11,9 +13,14 @@ export function ConnectionStatus() {
           {isConnected ? 'Sleeper Conectado' : 'Desconectado'}
         </span>
       </div>
+      {isConnected && state.currentLeague && (
+        <Badge variant="outline" className="mt-2 text-xs">
+          {state.currentLeague.name}
+        </Badge>
+      )}
       {!isConnected && (
         <Badge variant="outline" className="mt-2 text-xs">
-          Requer Supabase
+          Não Conectado
         </Badge>
       )}
     </div>

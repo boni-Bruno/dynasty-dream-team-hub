@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useSleeperData } from "@/hooks/useSleeperData";
 
 export function SleeperAuth() {
   const [leagueId, setLeagueId] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
+  const { state, connectToSleeper } = useSleeperData();
 
   const handleConnect = async () => {
     if (!leagueId.trim()) {
@@ -21,15 +23,30 @@ export function SleeperAuth() {
     }
 
     setIsConnecting(true);
-    
-    // Esta funcionalidade será implementada com Supabase
-    toast({
-      title: "Atenção",
-      description: "Integração com Sleeper requer configuração do Supabase",
-    });
-    
+    await connectToSleeper(leagueId.trim());
     setIsConnecting(false);
   };
+
+  if (state.isConnected && state.currentLeague) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="text-center text-green-600">✅ Liga Conectada</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-center">
+            <h3 className="font-semibold">{state.currentLeague.name}</h3>
+            <p className="text-sm text-muted-foreground">
+              {state.currentLeague.total_rosters} times • {state.currentLeague.settings?.type}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Liga ID: {state.leagueId}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -60,7 +77,7 @@ export function SleeperAuth() {
 
         <div className="text-center">
           <p className="text-xs text-muted-foreground">
-            Requer integração com Supabase para acessar a API do Sleeper
+            Conecta via Supabase Edge Functions com a API do Sleeper
           </p>
         </div>
       </CardContent>

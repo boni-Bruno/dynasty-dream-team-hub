@@ -14,6 +14,7 @@ export interface SleeperLeague {
     draft_rounds?: number;
     trade_deadline?: number;
     playoff_week_start?: number;
+    type?: string;
   };
 }
 
@@ -90,7 +91,7 @@ export interface SleeperTrade {
 export interface AppState {
   isConnected: boolean;
   leagueId?: string;
-  league?: SleeperLeague;
+  currentLeague?: SleeperLeague;
   rosters?: SleeperRoster[];
   userRoster?: SleeperRoster;
   players?: Record<string, SleeperPlayer>;
