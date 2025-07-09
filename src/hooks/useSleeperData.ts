@@ -16,17 +16,26 @@ export function useSleeperData() {
         description: "Tentando conectar à liga do Sleeper",
       });
 
+      console.log('Attempting to connect to league:', leagueId);
+
       // Call the league endpoint to validate the league ID
       const { data: leagueData, error } = await supabase.functions.invoke('sleeper-league', {
         body: { leagueId }
       });
 
+      console.log('Supabase function response:', { data: leagueData, error });
+
       if (error) {
+        console.error('Supabase function error:', error);
         throw new Error(error.message || "Erro ao conectar com a API do Sleeper");
       }
 
       if (!leagueData) {
         throw new Error("Liga não encontrada");
+      }
+
+      if (leagueData.error) {
+        throw new Error(leagueData.error);
       }
 
       // Update state with connected league
@@ -43,6 +52,7 @@ export function useSleeperData() {
       });
       
     } catch (error) {
+      console.error('Connection error:', error);
       toast({
         title: "Erro na Conexão",
         description: error instanceof Error ? error.message : "Erro desconhecido",
