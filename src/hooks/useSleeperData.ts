@@ -4,8 +4,21 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useSleeperData() {
-  const [state, setState] = useState<AppState>({
-    isConnected: false,
+  const [state, setState] = useState<AppState>(() => {
+    // Load from localStorage on initialization
+    try {
+      const stored = localStorage.getItem('sleeper-connection');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          isConnected: true,
+          ...parsed
+        };
+      }
+    } catch (error) {
+      console.error('Error loading stored connection:', error);
+    }
+    return { isConnected: false };
   });
   const { toast } = useToast();
 
@@ -39,12 +52,25 @@ export function useSleeperData() {
       }
 
       // Update state with connected league
-      setState(prev => ({
-        ...prev,
+      const newState = {
         isConnected: true,
         currentLeague: leagueData,
         leagueId
+      };
+      setState(prev => ({
+        ...prev,
+        ...newState
       }));
+
+      // Save to localStorage to persist connection
+      try {
+        localStorage.setItem('sleeper-connection', JSON.stringify({
+          currentLeague: leagueData,
+          leagueId
+        }));
+      } catch (error) {
+        console.error('Error saving connection to localStorage:', error);
+      }
 
       toast({
         title: "Conectado com Sucesso!",
@@ -129,9 +155,23 @@ export function useSleeperData() {
     }
   }, []);
 
+  const disconnectFromSleeper = useCallback(() => {
+    try {
+      localStorage.removeItem('sleeper-connection');
+      setState({ isConnected: false });
+      toast({
+        title: "Desconectado",
+        description: "Conexão com o Sleeper foi removida",
+      });
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+    }
+  }, [toast]);
+
   return {
     state,
     connectToSleeper,
+    disconnectFromSleeper,
     fetchLeagueData,
     fetchRosters,
     fetchPlayers,

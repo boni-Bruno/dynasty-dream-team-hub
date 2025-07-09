@@ -1,1 +1,16 @@
 project_id = "juyhcnvpcxkfytsyhucw"
+
+[functions.sleeper-league]
+verify_jwt = false
+
+[functions.sleeper-rosters] 
+verify_jwt = false
+
+[functions.sleeper-players]
+verify_jwt = false
+
+[functions.sleeper-drafts]
+verify_jwt = false
+
+[functions.sleeper-transactions]
+verify_jwt = false

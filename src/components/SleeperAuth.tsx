@@ -10,7 +10,7 @@ export function SleeperAuth() {
   const [leagueId, setLeagueId] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
-  const { state, connectToSleeper } = useSleeperData();
+  const { state, connectToSleeper, disconnectFromSleeper } = useSleeperData();
 
   const handleConnect = async () => {
     if (!leagueId.trim()) {
@@ -43,6 +43,14 @@ export function SleeperAuth() {
               Liga ID: {state.leagueId}
             </p>
           </div>
+          
+          <Button 
+            onClick={disconnectFromSleeper}
+            variant="outline"
+            className="w-full mt-4"
+          >
+            Desconectar Liga
+          </Button>
         </CardContent>
       </Card>
     );
