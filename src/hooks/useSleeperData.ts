@@ -1,28 +1,18 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { AppState, SleeperLeague, SleeperRoster, SleeperPlayer } from "@/types/sleeper";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+const FIXED_LEAGUE_ID = '1181975218791636992';
+
 export function useSleeperData() {
-  const [state, setState] = useState<AppState>(() => {
-    // Load from localStorage on initialization
-    try {
-      const stored = localStorage.getItem('sleeper-connection');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          isConnected: true,
-          ...parsed
-        };
-      }
-    } catch (error) {
-      console.error('Error loading stored connection:', error);
-    }
-    return { isConnected: false };
+  const [state, setState] = useState<AppState>({
+    isConnected: false,
   });
   const { toast } = useToast();
 
-  const connectToSleeper = useCallback(async (leagueId: string) => {
+  const connectToFixedLeague = useCallback(async () => {
+    const leagueId = FIXED_LEAGUE_ID;
     try {
       toast({
         title: "Conectando...",
@@ -62,30 +52,16 @@ export function useSleeperData() {
         ...newState
       }));
 
-      // Save to localStorage to persist connection
-      try {
-        localStorage.setItem('sleeper-connection', JSON.stringify({
-          currentLeague: leagueData,
-          leagueId
-        }));
-      } catch (error) {
-        console.error('Error saving connection to localStorage:', error);
-      }
-
-      toast({
-        title: "Conectado com Sucesso!",
-        description: `Liga ${leagueData.name} conectada`,
-      });
+      console.log('Connected to fixed league:', leagueData.name);
       
     } catch (error) {
       console.error('Connection error:', error);
-      toast({
-        title: "Erro na Conexão",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
     }
-  }, [toast]);
+  }, []);
+
+  const connectToSleeper = useCallback(async (leagueId: string) => {
+    return connectToFixedLeague();
+  }, [connectToFixedLeague]);
 
   const fetchLeagueData = useCallback(async (leagueId: string) => {
     try {
@@ -156,22 +132,19 @@ export function useSleeperData() {
   }, []);
 
   const disconnectFromSleeper = useCallback(() => {
-    try {
-      localStorage.removeItem('sleeper-connection');
-      setState({ isConnected: false });
-      toast({
-        title: "Desconectado",
-        description: "Conexão com o Sleeper foi removida",
-      });
-    } catch (error) {
-      console.error('Error disconnecting:', error);
-    }
-  }, [toast]);
+    // Not applicable for fixed league connection
+  }, []);
+
+  // Auto-connect to fixed league on mount
+  useEffect(() => {
+    connectToFixedLeague();
+  }, [connectToFixedLeague]);
 
   return {
     state,
     connectToSleeper,
     disconnectFromSleeper,
+    connectToFixedLeague,
     fetchLeagueData,
     fetchRosters,
     fetchPlayers,
