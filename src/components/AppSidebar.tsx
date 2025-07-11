@@ -31,7 +31,7 @@ export function AppSidebar() {
       : "hover:bg-accent/50 text-sidebar-foreground";
 
   return (
-    <Sidebar className={state === "collapsed" ? "w-16" : "w-64"}>
+    <Sidebar className="w-64">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navegação</SidebarGroupLabel>
@@ -42,7 +42,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavCls}>
                       <span className="text-lg">{item.icon}</span>
-                      {state !== "collapsed" && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
