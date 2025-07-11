@@ -57,7 +57,7 @@ export function useSleeperData() {
     } catch (error) {
       console.error('Connection error:', error);
     }
-  }, []);
+  }, [toast]);
 
   const connectToSleeper = useCallback(async (leagueId: string) => {
     return connectToFixedLeague();
