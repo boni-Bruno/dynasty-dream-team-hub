@@ -111,8 +111,11 @@ const Players = () => {
               {!state.isConnected ? (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">
-                    Conecte-se ao Sleeper para ver os jogadores
+                    Conectando à liga...
                   </p>
+                  <Badge variant="secondary" className="mt-2">
+                    Liga será carregada automaticamente
+                  </Badge>
                 </div>
               ) : loading ? (
                 <div className="flex items-center justify-center py-12">
