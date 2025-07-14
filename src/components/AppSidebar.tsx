@@ -14,6 +14,7 @@ import { ConnectionStatus } from "@/components/ConnectionStatus";
 
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: "📊" },
+  { title: "Meu time", url: "/my-team", icon: "⭐" },
   { title: "Draft", url: "/draft", icon: "🎯" },
   { title: "Jogadores", url: "/players", icon: "👥" },
   { title: "Trades", url: "/trades", icon: "🔄" },
