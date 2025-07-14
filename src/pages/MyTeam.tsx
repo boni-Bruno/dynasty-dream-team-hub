@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSleeperData } from "@/hooks/useSleeperData";
-import { SleeperPlayer, SleeperRoster } from "@/types/sleeper";
+import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,10 +12,11 @@ interface PlayerWithDetails extends SleeperPlayer {
 }
 
 export default function MyTeam() {
-  const { state, fetchRosters, fetchPlayers } = useSleeperData();
+  const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
   const [userRoster, setUserRoster] = useState<SleeperRoster | null>(null);
   const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
   const [loading, setLoading] = useState(true);
+  const [teamOwner, setTeamOwner] = useState<SleeperUser | null>(null);
 
   useEffect(() => {
     const loadTeamData = async () => {
@@ -24,16 +25,32 @@ export default function MyTeam() {
       try {
         setLoading(true);
         
-        // Buscar rosters e jogadores
-        const [rostersData, playersResponse] = await Promise.all([
+        // Buscar rosters, jogadores e usuários
+        const [rostersData, playersResponse, usersData] = await Promise.all([
           fetchRosters(state.currentLeague.league_id),
-          fetchPlayers()
+          fetchPlayers(),
+          fetchUsers(state.currentLeague.league_id)
         ]);
 
-        if (rostersData && rostersData.length > 0) {
-          // Para este exemplo, vamos pegar o primeiro roster
-          // Em uma implementação real, você identificaria o roster do usuário
-          setUserRoster(rostersData[0]);
+        if (rostersData && rostersData.length > 0 && usersData) {
+          // Encontrar o usuário com team_name "Shadows"
+          const shadowsOwner = usersData.find((user: SleeperUser) => 
+            user.metadata?.team_name === "Shadows" || 
+            user.display_name === "Shadows" ||
+            user.username === "Shadows"
+          );
+          
+          if (shadowsOwner) {
+            // Encontrar o roster deste usuário
+            const shadowsRoster = rostersData.find((roster: SleeperRoster) => 
+              roster.owner_id === shadowsOwner.user_id
+            );
+            
+            if (shadowsRoster) {
+              setUserRoster(shadowsRoster);
+              setTeamOwner(shadowsOwner);
+            }
+          }
         }
 
         if (playersResponse) {
@@ -47,7 +64,7 @@ export default function MyTeam() {
     };
 
     loadTeamData();
-  }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers]);
+  }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers, fetchUsers]);
 
   const getPlayersByPosition = (playerIds: string[]) => {
     const playersByPosition: Record<string, PlayerWithDetails[]> = {};
@@ -154,8 +171,23 @@ export default function MyTeam() {
 
   if (!state.isConnected || !userRoster) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Meu Time</h1>
+    <div className="container mx-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Meu Time</h1>
+        {teamOwner && (
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+              {teamOwner.display_name?.[0] || teamOwner.username?.[0]}
+            </div>
+            <div>
+              <div className="font-semibold">Shadows</div>
+              <div className="text-sm text-muted-foreground">
+                {teamOwner.display_name || teamOwner.username}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
@@ -169,7 +201,22 @@ export default function MyTeam() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Meu Time</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Meu Time</h1>
+        {teamOwner && (
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+              {teamOwner.display_name?.[0] || teamOwner.username?.[0]}
+            </div>
+            <div>
+              <div className="font-semibold">Shadows</div>
+              <div className="text-sm text-muted-foreground">
+                {teamOwner.display_name || teamOwner.username}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       
       {renderTeamSection("Time Titular", userRoster.starters || [])}
       {renderTeamSection("Reservas", userRoster.reserve || [])}

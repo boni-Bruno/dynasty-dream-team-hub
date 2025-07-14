@@ -131,6 +131,20 @@ export function useSleeperData() {
     }
   }, []);
 
+  const fetchUsers = useCallback(async (leagueId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('sleeper-users', {
+        body: { leagueId }
+      });
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+  }, []);
+
   const disconnectFromSleeper = useCallback(() => {
     // Not applicable for fixed league connection
   }, []);
@@ -149,6 +163,7 @@ export function useSleeperData() {
     fetchRosters,
     fetchPlayers,
     fetchDrafts,
+    fetchUsers,
     fetchTrades,
   };
 }

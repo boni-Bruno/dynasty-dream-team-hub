@@ -47,6 +47,16 @@ export interface SleeperPlayer {
   status: "Active" | "Inactive" | "PUP" | "IR";
 }
 
+export interface SleeperUser {
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar: string;
+  metadata?: {
+    team_name?: string;
+  };
+}
+
 export interface SleeperDraft {
   draft_id: string;
   league_id: string;
