@@ -4,8 +4,9 @@ import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-const ROSTER_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+const ROSTER_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'K', 'DEF', 'DL', 'LB', 'DB', 'IDP_FLEX', 'BN'];
 
 interface PlayerWithDetails extends SleeperPlayer {
   player_id: string;
@@ -82,6 +83,15 @@ export default function MyTeam() {
             ...player,
             player_id: playerId
           });
+        } else {
+          // Para jogadores de banco, adicionar à posição BN se não tiver posição específica
+          if (!playersByPosition['BN']) {
+            playersByPosition['BN'] = [];
+          }
+          playersByPosition['BN'].push({
+            ...player,
+            player_id: playerId
+          });
         }
       }
     });
@@ -132,11 +142,14 @@ export default function MyTeam() {
           <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 overflow-x-auto">
-            {ROSTER_POSITIONS.map(position => 
-              renderPositionColumn(position, playersByPosition[position])
-            )}
-          </div>
+          <ScrollArea className="w-full">
+            <div className="flex gap-4 pb-4">
+              {ROSTER_POSITIONS.map(position => 
+                renderPositionColumn(position, playersByPosition[position])
+              )}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </CardContent>
       </Card>
     );
