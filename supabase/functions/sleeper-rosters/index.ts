@@ -12,25 +12,33 @@ serve(async (req) => {
   }
 
   try {
+    // Lendo o corpo da requisição
     const { leagueId } = await req.json();
-    
+
     if (!leagueId) {
-      throw new Error('League ID is required');
+      throw new Error('League ID is required'); // Garante que o League ID seja enviado
     }
 
-    console.log(`Fetching rosters for league: ${leagueId}`);
+    console.log(`[INFO] Fetching rosters for league: ${leagueId}`);
 
-    // Fetch rosters from Sleeper API
-    const response = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`);
-    
+    // Trabalhando com Sleeper API
+    const sleeperEndpoint = `https://api.sleeper.app/v1/league/${leagueId}/rosters`;
+    console.log(`[DEBUG] Hitting Sleeper API at: ${sleeperEndpoint}`);
+
+    const response = await fetch(sleeperEndpoint);
+
     if (!response.ok) {
-      throw new Error(`Sleeper API error: ${response.status}`);
+      throw new Error(`[ERROR] Sleeper API returned with status ${response.status}: ${response.statusText}`);
     }
 
     const rosters = await response.json();
 
+    console.log(`[INFO] Successfully fetched rosters:`);
+    console.dir(rosters); // Exibe os dados no console para debug
+
+    // Retorno dos dados com suporte a CORS
     return new Response(
-      JSON.stringify(rosters),
+      JSON.stringify(rosters), // Converte os rosters para JSON e os retorna
       { 
         headers: { 
           ...corsHeaders, 
@@ -40,11 +48,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in sleeper-rosters function:', error);
-    
+    console.error(`[ERROR] Error in sleeper-rosters function: ${error.message || error.toString()}`);
+
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error' 
+        error: error.message || 'Internal server error' // Retorna mensagem de erro para o frontend
       }),
       {
         status: 500,
@@ -56,3 +64,4 @@ serve(async (req) => {
     );
   }
 });
+//tst
