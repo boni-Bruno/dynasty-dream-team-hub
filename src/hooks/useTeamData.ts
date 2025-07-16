@@ -95,32 +95,45 @@ export function useTeamData() {
         ]);
 
         if (rostersData && rostersData.length > 0 && usersData) {
+          console.log("Rosters encontrados:", rostersData);
+          console.log("Usuários encontrados:", usersData);
+
           // Encontrar o usuário com team_name "Shadows"
           const shadowsOwner = usersData.find((user: SleeperUser) => 
             user.metadata?.team_name === "Shadows" || 
             user.display_name === "Shadows" ||
             user.username === "Shadows"
           );
-          
+
+          console.log("Usuário Shadows encontrado:", shadowsOwner);
+
           if (shadowsOwner) {
             // Encontrar o roster deste usuário
             const shadowsRoster = rostersData.find((roster: SleeperRoster) => 
               roster.owner_id === shadowsOwner.user_id
             );
-            
+
+            console.log("Roster associado ao Shadows:", shadowsRoster);
+
             if (shadowsRoster) {
               setUserRoster(shadowsRoster);
 
-              // Combinar todos os IDs de jogadores
+              // Combinar todos os jogadores
               const allIds = [
                 ...(shadowsRoster.starters || []),
                 ...(shadowsRoster.reserve || []),
                 ...(shadowsRoster.taxi || []),
               ];
-              setAllPlayerIds(allIds); // Armazena os IDs combinados
+              console.log("Todos os IDs combinados dos jogadores:", allIds);
+              setAllPlayerIds(allIds);
               setTeamOwner(shadowsOwner);
             }
           }
+        }
+
+        if (playersResponse) {
+          console.log("Dados de todos os jogadores retornados:", playersResponse);
+          setPlayersData(playersResponse);
         }
 
         if (playersResponse) {
