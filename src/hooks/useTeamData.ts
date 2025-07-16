@@ -28,7 +28,7 @@ export function useTeamData() {
           const shadowsOwner = usersData.find((user: SleeperUser) => 
             user.metadata?.team_name === "Shadows" || 
             user.display_name === "Shadows" ||
-            user.username === "brunnohb"
+            user.username === "Shadows"
           );
           
           if (shadowsOwner) {
