@@ -72,33 +72,3 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
     </Card>
   );
 }
-
-export function TeamSection({ title, playerIds, playersData }) {
-  console.log(`Jogadores na seção ${title}:`, playerIds);
-  console.log("Dados completos de jogadores:", playersData);
-
-  return (
-    <div className="team-section">
-      <h2>{title}</h2>
-      {playerIds.map((playerId) => {
-        const player = playersData[playerId];
-        console.log(`Dados do jogador ${playerId}:`, player);
-
-        if (!player) {
-          return (
-            <div key={playerId} className="player-placeholder">
-              Jogador não encontrado (ID: {playerId})
-            </div>
-          );
-        }
-
-        return (
-          <div key={playerId} className="player-card">
-            <p>{player.name}</p>
-            <p>{player.position}</p>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
