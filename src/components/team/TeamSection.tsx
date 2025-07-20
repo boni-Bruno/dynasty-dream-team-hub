@@ -126,12 +126,35 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
         // Exibir aviso de jogador não encontrado
         console.error(`Nenhum dado encontrado para o jogador com ID: ${playerId}`);
       }
+
+      playerIds.forEach(playerId => {
+        const player = playersData[playerId];
+       if (!player) {
+        console.warn(`⚠️ Jogador não encontrado para o ID ${playerId}`);
+        }
+      });
     });
 
     return playersByPosition;
   };
 
+  console.log("Jogadores recebidos:", playerIds);
+  console.log("Informações detalhadas dos jogadores (playersData):", playersData);
+
   const playersByPosition = getPlayersByPosition(playerIds);
+
+  <div>
+    <h3>Todos os jogadores disponíveis (diagnóstico):</h3>
+    <div className="grid grid-cols-4 gap-4">
+      {Object.keys(playersData).map((playerId) => (
+        <div key={playerId} className="player-diagnostic-card">
+          <p><strong>Nome:</strong> {playersData[playerId]?.name || "Desconhecido"}</p>
+          <p><strong>Posição:</strong> {playersData[playerId]?.position || "Indefinida"}</p>
+          <p><strong>ID:</strong> {playerId}</p>
+        </div>
+      ))}
+    </div>
+  </div>
 
   return (
     <Card className="mb-6">
