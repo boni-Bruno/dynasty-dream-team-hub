@@ -151,10 +151,14 @@ export function useTeamData() {
 
   return {
     userRoster,
-    allPlayerIds, // IDs combinados de todos os jogadores
+    console.log("IDs de jogadores combinados (allPlayerIds):", allIds);
     playersData,
     loading,
     teamOwner,
     isConnected: state.isConnected,
   };
+}
+
+if (playersResponse) {
+  console.log("Jogadores carregados (playersResponse):", playersResponse);
 }
