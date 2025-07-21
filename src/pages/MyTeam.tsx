@@ -4,13 +4,24 @@ import { LoadingSkeleton } from "@/components/team/LoadingSkeleton";
 import { TeamHeader } from "@/components/team/TeamHeader";
 
 export default function MyTeam() {
-  const { allPlayerIds, playersData, loading, teamOwner, isConnected } = useTeamData();
+  const {
+    starters,
+    bench,
+    injuredReserve,
+    taxi,
+    playersData,
+    loading,
+    teamOwner,
+    isConnected,
+  } = useTeamData();
 
   if (loading) {
+    console.log("Carregando dados do time...");
     return <LoadingSkeleton />;
   }
 
-  if (!isConnected || !allPlayerIds.length) {
+  if (!isConnected || (!starters.length && !bench.length && !injuredReserve.length && !taxi.length)) {
+    console.warn("Usuário não está conectado ou os jogadores não foram encontrados.");
     return (
       <div className="container mx-auto p-6">
         <TeamHeader teamOwner={teamOwner} />
@@ -23,12 +34,14 @@ export default function MyTeam() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Cabeçalho do Time */}
       <TeamHeader teamOwner={teamOwner} />
-      <TeamSection
-        title="Meu Time"
-        playerIds={allPlayerIds}
-        playersData={playersData}
-      />
+
+      {/* Seções do Time */}
+      <TeamSection title="Starters" playerIds={starters} playersData={playersData} />
+      <TeamSection title="Bench" playerIds={bench} playersData={playersData} />
+      <TeamSection title="Injured Reserve" playerIds={injuredReserve} playersData={playersData} />
+      <TeamSection title="Taxi Squad" playerIds={taxi} playersData={playersData} />
     </div>
   );
 }
