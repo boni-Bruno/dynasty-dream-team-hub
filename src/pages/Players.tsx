@@ -1,236 +1,146 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect, useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Loader2 } from "lucide-react";
 import { useSleeperData } from "@/hooks/useSleeperData";
-import { SleeperPlayer } from "@/types/sleeper";
-import { Loader2, Search, User } from "lucide-react";
+import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 
 const Players = () => {
-  const { state, fetchPlayers } = useSleeperData();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [positionFilter, setPositionFilter] = useState("all");
-  const [teamFilter, setTeamFilter] = useState("all");
-  const [players, setPlayers] = useState<Record<string, SleeperPlayer>>({});
-  const [loading, setLoading] = useState(false);
+  const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null); // Time selecionado
+  const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
+  const [rosters, setRosters] = useState<SleeperRoster[]>([]); // Lista de todos os times
+  const [users, setUsers] = useState<SleeperUser[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadPlayers = async () => {
-      if (state.isConnected) {
-        setLoading(true);
-        try {
-          const playersData = await fetchPlayers();
-          setPlayers(playersData || {});
-        } catch (error) {
-          console.error("Erro ao carregar jogadores:", error);
-        } finally {
-          setLoading(false);
-        }
+    const loadPlayersAndTeams = async () => {
+      if (!state.isConnected || !state.currentLeague) {
+        console.warn("Usuário desconectado ou nenhuma liga foi selecionada.");
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        // Buscar os rosters, usuários e jogadores da liga
+        const [rostersData, playersResponse, usersResponse] = await Promise.all([
+          fetchRosters(state.currentLeague.league_id),
+          fetchPlayers(),
+          fetchUsers(state.currentLeague.league_id),
+        ]);
+
+        // Atualizar estados locais com os resultados
+        setRosters(rostersData || []);
+        setUsers(usersResponse || []);
+        setPlayersData(playersResponse || {});
+      } catch (error) {
+        console.error("❌ Erro ao carregar jogadores ou times:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadPlayers();
-  }, [state.isConnected, fetchPlayers]);
+    loadPlayersAndTeams();
+  }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers, fetchUsers]);
 
-  const filteredPlayers = useMemo(() => {
-    return Object.values(players).filter((player) => {
-      const matchesSearch = !searchTerm || 
-        `${player.first_name} ${player.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesPosition = positionFilter === "all" || player.position === positionFilter;
-      const matchesTeam = teamFilter === "all" || player.team === teamFilter;
-      
-      return matchesSearch && matchesPosition && matchesTeam;
-    });
-  }, [players, searchTerm, positionFilter, teamFilter]);
+  // Buscar os jogadores do time selecionado
+  const selectedTeamPlayers = selectedTeam
+    ? rosters.find((roster) => roster.owner_id === selectedTeam)?.players || []
+    : [];
 
-  const positions = useMemo(() => {
-    const pos = new Set(Object.values(players).map(p => p.position).filter(Boolean));
-    return Array.from(pos).sort();
-  }, [players]);
-
-  const teams = useMemo(() => {
-    const teamSet = new Set(Object.values(players).map(p => p.team).filter(Boolean));
-    return Array.from(teamSet).sort();
-  }, [players]);
+  // Obter o nome do time baseado no usuário
+  const getTeamName = (ownerId: string): string => {
+    const user = users.find((u) => u.user_id === ownerId);
+    return user?.metadata.team_name || user?.display_name || "Time Desconhecido";
+  };
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Avaliação de Jogadores</h1>
-        <p className="text-muted-foreground">Pesquise estatísticas e projeções de jogadores</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Jogadores por Time</h1>
+        <p className="text-muted-foreground">Selecione um time para visualizar os jogadores</p>
       </div>
 
-      <div className="mb-6 flex gap-4 flex-wrap">
-        <div className="relative flex-1 min-w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar jogadores..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <Select value={positionFilter} onValueChange={setPositionFilter}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Posição" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            {positions.map(pos => (
-              <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={teamFilter} onValueChange={setTeamFilter}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Time" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {teams.map(team => (
-              <SelectItem key={team} value={team}>{team}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="mb-6">
+        {/* Dropdown para seleção de times */}
+        {loading ? (
+          <div className="flex items-center text-muted-foreground gap-2">
+            <Loader2 className="animate-spin h-4 w-4" />
+            Carregando times...
+          </div>
+        ) : (
+          <Select value={selectedTeam || ""} onValueChange={setSelectedTeam}>
+            <SelectTrigger className="w-full max-w-md">
+              <SelectValue placeholder="Selecione um Time" />
+            </SelectTrigger>
+            <SelectContent>
+              {rosters.map((roster) => (
+                <SelectItem key={roster.owner_id} value={roster.owner_id}>
+                  {getTeamName(roster.owner_id)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Lista de Jogadores ({filteredPlayers.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!state.isConnected ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">
-                    Conectando à liga...
-                  </p>
-                  <Badge variant="secondary" className="mt-2">
-                    Liga será carregada automaticamente
-                  </Badge>
-                </div>
-              ) : loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                  <span className="text-muted-foreground">Carregando jogadores...</span>
-                </div>
-              ) : filteredPlayers.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">
-                    {searchTerm || positionFilter !== "all" || teamFilter !== "all" 
-                      ? "Nenhum jogador encontrado com os filtros aplicados"
-                      : "Nenhum jogador encontrado"
-                    }
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {filteredPlayers.slice(0, 50).map((player) => (
-                    <div key={player.player_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <h4 className="font-medium">
-                            {player.first_name} {player.last_name}
-                          </h4>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{player.team || "N/A"}</span>
-                            {player.position && (
-                              <>
-                                <span>•</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {player.position}
-                                </Badge>
-                              </>
-                            )}
-                            {player.age && (
-                              <>
-                                <span>•</span>
-                                <span>{player.age} anos</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {player.injury_status && (
-                          <Badge variant="destructive" className="text-xs">
-                            {player.injury_status}
-                          </Badge>
+      {/* Lista de jogadores */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Jogadores</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span className="text-muted-foreground">Carregando jogadores...</span>
+            </div>
+          ) : !selectedTeam ? (
+            <div className="text-center text-muted-foreground py-4">
+              Selecione um time para visualizar os jogadores.
+            </div>
+          ) : selectedTeamPlayers.length === 0 ? (
+            <div className="text-center text-muted-foreground py-4">
+              Este time não possui jogadores no momento.
+            </div>
+          ) : (
+            <ScrollArea>
+              <div className="space-y-3">
+                {selectedTeamPlayers
+                  .map((playerId) => playersData[playerId]) // Obter dados do jogador
+                  .filter(Boolean) // Remover jogadores inválidos
+                  .map((player) => (
+                    <div key={player.player_id} className="p-3 border rounded-lg">
+                      <h4 className="font-medium">
+                        {player.first_name} {player.last_name}
+                      </h4>
+                      <div className="text-muted-foreground text-sm">
+                        <span>{player.position || "Posição não disponível"}</span>
+                        {player.team && (
+                          <>
+                            <span> • </span>
+                            <span>{player.team}</span>
+                          </>
                         )}
-                        <Badge variant="secondary" className="text-xs">
-                          {player.status}
+                      </div>
+
+                      {/* Status, se disponível */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {player.status || "Sem status"}
                         </Badge>
                       </div>
                     </div>
                   ))}
-                  {filteredPlayers.length > 50 && (
-                    <p className="text-center text-sm text-muted-foreground py-4">
-                      Mostrando primeiros 50 de {filteredPlayers.length} jogadores
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Estatísticas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total de Jogadores:</span>
-                  <span className="font-medium">{Object.keys(players).length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Filtrados:</span>
-                  <span className="font-medium">{filteredPlayers.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Posições:</span>
-                  <span className="font-medium">{positions.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Times:</span>
-                  <span className="font-medium">{teams.length}</span>
-                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Conexão</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${state.isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-sm">
-                  {state.isConnected ? 'Conectado ao Sleeper' : 'Desconectado'}
-                </span>
-              </div>
-              {state.currentLeague && (
-                <div className="mt-2">
-                  <Badge variant="outline" className="text-xs">
-                    {state.currentLeague.name}
-                  </Badge>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              <ScrollBar orientation="vertical" />
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
