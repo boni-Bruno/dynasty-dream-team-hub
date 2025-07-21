@@ -58,20 +58,25 @@ import { LoadingSkeleton } from "@/components/team/LoadingSkeleton";
 import { TeamHeader } from "@/components/team/TeamHeader";
 
 export default function MyTeam() {
-  const { userRoster, playersData, loading, teamOwner, isConnected } = useTeamData();
+  // Dados fornecidos pelo hook customizado
+  const { userRoster, allPlayerIds, playersData, loading, teamOwner, isConnected } = useTeamData();
 
+  // Exibição enquanto os dados estão sendo carregados
   if (loading) {
+    console.log("Carregando dados do time...");
     return <LoadingSkeleton />;
   }
 
+  // Tratamento para caso ainda não esteja conectado ou dados estejam ausentes
   if (!isConnected || !userRoster) {
+    console.warn("Usuário não está conectado ou Roster não encontrado.");
     return (
       <div className="container mx-auto p-6">
         <TeamHeader teamOwner={teamOwner} />
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
-              Carregando dados do seu time...
+              Não foi possível carregar os dados do seu time. Tente novamente mais tarde.
             </div>
           </CardContent>
         </Card>
@@ -79,22 +84,19 @@ export default function MyTeam() {
     );
   }
 
-  // Combinar todos os jogadores do time em um único array
-  const allPlayers = [
-    ...(userRoster.starters || []), // Jogadores titulares
-    ...(userRoster.reserve || []), // Jogadores reservas
-    ...(userRoster.taxi || []),    // Jogadores lesionados
-  ];
+  // Logs de validação do que está sendo enviado
+  console.log("IDs de jogadores (allPlayerIds):", allPlayerIds);
+  console.log("Detalhes dos jogadores (playersData):", playersData);
 
   return (
     <div className="container mx-auto p-6">
       <TeamHeader teamOwner={teamOwner} />
 
-      {/* Exibir todos os jogadores na seção "Time Completo" */}
-      <TeamSection 
-        title="Time Completo" 
-        playerIds={allPlayers} 
-        playersData={playersData} 
+      {/* Exibição do time completo */}
+      <TeamSection
+        title="Time Completo"
+        playerIds={allPlayerIds} // Todos os IDs combinados do time
+        playersData={playersData} // Dados detalhados dos jogadores
       />
     </div>
   );
