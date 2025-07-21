@@ -1,7 +1,6 @@
 import { SleeperPlayer } from "@/types/sleeper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { PositionColumn } from "./PositionColumn";
 
 interface PlayerWithDetails extends SleeperPlayer {
   player_id: string;
@@ -13,15 +12,35 @@ interface TeamSectionProps {
   playersData: Record<string, SleeperPlayer>;
 }
 
+const DISPLAY_POSITIONS = [
+  "QB", "WR", "RB", "TE", "K", "CB", "DB", "DE", "DL", "DT", "LB",
+];
+
 export function TeamSection({ title, playerIds, playersData }: TeamSectionProps) {
   /**
-   * Função para processar os jogadores em colunas
+   * Filtra e organiza os jogadores pelas posições desejadas
    */
-  const processPlayers = (playerIds: string[]) => {
-    return playerIds.map((playerId) => playersData[playerId]).filter(Boolean);
+  const getPlayersByPosition = (): Record<string, PlayerWithDetails[]> => {
+    const playersByPosition: Record<string, PlayerWithDetails[]> = {};
+
+    DISPLAY_POSITIONS.forEach((position) => {
+      playersByPosition[position] = [];
+    });
+
+    playerIds.forEach((playerId) => {
+      const player = playersData[playerId];
+      if (player && DISPLAY_POSITIONS.includes(player.position)) {
+        playersByPosition[player.position].push({
+          ...player,
+          player_id: playerId,
+        });
+      }
+    });
+
+    return playersByPosition;
   };
 
-  const players = processPlayers(playerIds);
+  const playersByPosition = getPlayersByPosition();
 
   return (
     <Card className="mb-6">
@@ -29,14 +48,19 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="w-full">
-          {/* Renderizar uma lista dos jogadores */}
-          <div className="flex flex-wrap gap-4">
-            {players.map((player) => (
-              <div key={player.player_id} className="p-2 border rounded w-48">
-                <h5 className="font-bold">{player.full_name}</h5>
-                <p>Posição: {player.position}</p>
-                <p>Time: {player.team || "Nenhum"}</p>
+        <ScrollArea>
+          <div className="flex gap-4 pb-4">
+            {DISPLAY_POSITIONS.map((position) => (
+              <div key={position} className="min-w-[150px]">
+                <h4 className="font-bold text-center mb-2">{position}</h4>
+                <div className="space-y-2">
+                  {playersByPosition[position].map((player) => (
+                    <div key={player.player_id} className="p-2 border rounded">
+                      <p className="text-sm font-medium">{player.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{player.team || "Sem time"}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
