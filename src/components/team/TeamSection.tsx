@@ -94,6 +94,7 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
           <div className="grid grid-cols-4 gap-4">
             {playerIds.map((playerId) => {
               const player = playersData[playerId];
+              console.log(`🔍 ID jogador: ${playerId} - Encontrado no playersData? ${!!player}`);
               return (
                 <div key={playerId} className="p-2 border rounded">
                   <p>
