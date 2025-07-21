@@ -5,7 +5,7 @@ import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 export function useTeamData() {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
   const [starters, setStarters] = useState<string[]>([]);
-  const [bench, setBench] = useState<string[]>([]);
+  const [bench, setBench] = useState<string[]>([]); // Banco de reservas
   const [injuredReserve, setInjuredReserve] = useState<string[]>([]);
   const [taxi, setTaxi] = useState<string[]>([]);
   const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
@@ -28,7 +28,11 @@ export function useTeamData() {
           fetchUsers(state.currentLeague.league_id),
         ]);
 
-        if (rostersData?.length > 0 && usersData) {
+        console.log("✅ Rosters Data:", rostersData);
+        console.log("✅ Players Data:", playersResponse);
+        console.log("✅ Users Data:", usersData);
+
+        if (rostersData?.length && usersData) {
           const shadowsOwner = usersData.find(
             (user: SleeperUser) =>
               user.metadata?.team_name === "Shadows" ||
@@ -43,11 +47,23 @@ export function useTeamData() {
 
             if (shadowsRoster) {
               setStarters(shadowsRoster.starters || []);
-              setBench(shadowsRoster.reserve || []);
+              setBench(shadowsRoster.reserve || []); // Setando o banco de reservas
               setInjuredReserve(shadowsRoster.injured_reserve || []);
               setTaxi(shadowsRoster.taxi || []);
+
+              // Logs para verificar os jogadores atribuídos por categoria
+              console.log("Starters (titulares):", shadowsRoster.starters);
+              console.log("Bench (reservas):", shadowsRoster.reserve);
+              console.log("Injured Reserve:", shadowsRoster.injured_reserve);
+              console.log("Taxi Squad:", shadowsRoster.taxi);
+            } else {
+              console.warn("⚠️ Nenhum roster encontrado para o time 'Shadows'.");
             }
+          } else {
+            console.warn("⚠️ Usuário 'Shadows' não foi identificado.");
           }
+        } else {
+          console.warn("⚠️ Rosters ou usuários estão vazios.");
         }
 
         if (playersResponse) {
@@ -60,9 +76,11 @@ export function useTeamData() {
           });
 
           setPlayersData(formattedPlayersData);
+        } else {
+          console.warn("⚠️ Os dados de jogadores estão ausentes.");
         }
       } catch (error) {
-        console.error("Erro ao carregar dados do time:", error);
+        console.error("❌ Erro ao carregar dados do time:", error);
       } finally {
         setLoading(false);
       }
