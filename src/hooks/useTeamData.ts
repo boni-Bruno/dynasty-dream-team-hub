@@ -52,10 +52,10 @@ export function useTeamData() {
 
               // Coletar todos os IDs de jogadores no roster
               const allIds = [
-                ...(shadowsRoster.starters || []),
-                ...(shadowsRoster.reserve || []),
-                ...(shadowsRoster.taxi || []),
-              ].filter((id) => id); // Filtrar IDs válidos (remover null/undefined)
+              ...(shadowsRoster.starters || []),
+              ...(shadowsRoster.reserve || []),
+              ...(shadowsRoster.taxi || []),
+              ].filter((id) => id && id !== "0"); // Remove IDs inválidos como "0", null ou undefined
 
               console.log("🎯 IDs de jogadores no roster:", allIds);
               setAllPlayerIds(allIds);
