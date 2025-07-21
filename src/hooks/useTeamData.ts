@@ -55,6 +55,7 @@ export function useTeamData() {
               ...(shadowsRoster.starters || []),
               ...(shadowsRoster.reserve || []),
               ...(shadowsRoster.taxi || []),
+              ...(shadowsRoster.players || []), // Inclui todos os jogadores do roster (se existir)
               ].filter((id) => id && id !== "0"); // Remove IDs inválidos como "0", null ou undefined
 
               console.log("🎯 IDs de jogadores no roster:", allIds);
