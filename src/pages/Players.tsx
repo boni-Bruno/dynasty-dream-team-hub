@@ -23,31 +23,26 @@ const YEARS = [2025, 2024, 2023, 2022, 2021, 2020];
 
 const Players = () => {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null); // Time selecionado
-  const [selectedPosition, setSelectedPosition] = useState<string>("all"); // Posição selecionada
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<string>("all");
   const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
-  const [rosters, setRosters] = useState<SleeperRoster[]>([]); // Lista de todos os times
+  const [rosters, setRosters] = useState<SleeperRoster[]>([]);
   const [users, setUsers] = useState<SleeperUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadPlayersAndTeams = async () => {
-      if (!state.isConnected || !state.currentLeague) {
-        console.warn("Usuário desconectado ou nenhuma liga foi selecionada.");
-        return;
-      }
+      if (!state.isConnected || !state.currentLeague) return;
 
       setLoading(true);
 
       try {
-        // Carregar dados da API do Sleeper
         const [rostersData, playersResponse, usersResponse] = await Promise.all([
           fetchRosters(state.currentLeague.league_id),
           fetchPlayers(),
           fetchUsers(state.currentLeague.league_id),
         ]);
 
-        // Atualizar estados locais
         setRosters(rostersData || []);
         setUsers(usersResponse || []);
         setPlayersData(playersResponse || {});
@@ -61,12 +56,10 @@ const Players = () => {
     loadPlayersAndTeams();
   }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers, fetchUsers]);
 
-  // Buscar os jogadores do time selecionado
   const selectedTeamPlayers = selectedTeam
     ? rosters.find((roster) => roster.owner_id === selectedTeam)?.players || []
     : [];
 
-  // Filtrar jogadores pela posição selecionada
   const filteredPlayers = useMemo(() => {
     if (selectedPosition === "all") {
       return selectedTeamPlayers;
@@ -77,15 +70,13 @@ const Players = () => {
     );
   }, [selectedTeamPlayers, selectedPosition, playersData]);
 
-  // Obter o nome do time baseado no usuário
   const getTeamName = (ownerId: string): string => {
     const user = users.find((u) => u.user_id === ownerId);
     return user?.metadata.team_name || user?.display_name || "Time Desconhecido";
   };
 
-  // Gerar pontuações fictícias caso não existam
   const getPlayerScores = (playerId: string) => {
-    const scores = playersData[playerId]?.scores || {}; // Obter pontuações fictícias para cada ano
+    const scores = playersData[playerId]?.scores || {};
     return YEARS.map((year) => scores[year] || "N/A");
   };
 
@@ -97,7 +88,6 @@ const Players = () => {
       </div>
 
       <div className="mb-6 space-y-4">
-        {/* Dropdown para seleção de times */}
         {loading ? (
           <div className="flex items-center text-muted-foreground gap-2">
             <Loader2 className="animate-spin h-4 w-4" />
@@ -118,7 +108,6 @@ const Players = () => {
           </Select>
         )}
 
-        {/* Dropdown para seleção de posições */}
         <Select value={selectedPosition} onValueChange={setSelectedPosition}>
           <SelectTrigger className="w-full max-w-md">
             <SelectValue placeholder="Selecione uma Posição" />
@@ -134,13 +123,9 @@ const Players = () => {
         </Select>
       </div>
 
-      {/* Lista de jogadores */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            {/* Título com Contagem */}
-            Jogadores ({filteredPlayers.length})
-          </CardTitle>
+          <CardTitle>Jogadores ({filteredPlayers.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -160,8 +145,8 @@ const Players = () => {
             <ScrollArea>
               <div className="space-y-3">
                 {filteredPlayers
-                  .map((playerId) => playersData[playerId]) // Obter dados do jogador
-                  .filter(Boolean) // Remover jogadores inválidos
+                  .map((playerId) => playersData[playerId])
+                  .filter(Boolean)
                   .map((player) => (
                     <div key={player.player_id} className="p-3 border rounded-lg flex justify-between items-center">
                       <div>
@@ -178,7 +163,6 @@ const Players = () => {
                           )}
                         </div>
                       </div>
-                      {/* Tabela de Pontuação */}
                       <div className="flex space-x-4">
                         {getPlayerScores(player.player_id).map((score, index) => (
                           <div key={YEARS[index]} className="text-center">
