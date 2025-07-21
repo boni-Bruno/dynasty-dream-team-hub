@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +7,21 @@ import { Loader2 } from "lucide-react";
 import { useSleeperData } from "@/hooks/useSleeperData";
 import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 
+const positionGroups = {
+  QB: ["QB"],
+  RB: ["RB"],
+  WR: ["WR"],
+  TE: ["TE"],
+  K: ["K"],
+  DL: ["DE", "DT", "DL"],
+  LB: ["LB"],
+  DB: ["CB", "DB", "S"],
+};
+
 const Players = () => {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null); // Time selecionado
+  const [selectedPosition, setSelectedPosition] = useState<string>("all"); // Posição selecionada
   const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
   const [rosters, setRosters] = useState<SleeperRoster[]>([]); // Lista de todos os times
   const [users, setUsers] = useState<SleeperUser[]>([]);
@@ -25,14 +37,14 @@ const Players = () => {
       setLoading(true);
 
       try {
-        // Buscar os rosters, usuários e jogadores da liga
+        // Carregar dados da API do Sleeper
         const [rostersData, playersResponse, usersResponse] = await Promise.all([
           fetchRosters(state.currentLeague.league_id),
           fetchPlayers(),
           fetchUsers(state.currentLeague.league_id),
         ]);
 
-        // Atualizar estados locais com os resultados
+        // Atualizar estados locais
         setRosters(rostersData || []);
         setUsers(usersResponse || []);
         setPlayersData(playersResponse || {});
@@ -51,6 +63,17 @@ const Players = () => {
     ? rosters.find((roster) => roster.owner_id === selectedTeam)?.players || []
     : [];
 
+  // Filtrar jogadores pela posição selecionada
+  const filteredPlayers = useMemo(() => {
+    if (selectedPosition === "all") {
+      return selectedTeamPlayers;
+    }
+    const allowedPositions = positionGroups[selectedPosition] || [];
+    return selectedTeamPlayers.filter(
+      (playerId) => playersData[playerId] && allowedPositions.includes(playersData[playerId].position)
+    );
+  }, [selectedTeamPlayers, selectedPosition, playersData]);
+
   // Obter o nome do time baseado no usuário
   const getTeamName = (ownerId: string): string => {
     const user = users.find((u) => u.user_id === ownerId);
@@ -61,10 +84,10 @@ const Players = () => {
     <div className="container mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Jogadores por Time</h1>
-        <p className="text-muted-foreground">Selecione um time para visualizar os jogadores</p>
+        <p className="text-muted-foreground">Selecione um time e uma posição para visualizar os jogadores.</p>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-4">
         {/* Dropdown para seleção de times */}
         {loading ? (
           <div className="flex items-center text-muted-foreground gap-2">
@@ -85,6 +108,21 @@ const Players = () => {
             </SelectContent>
           </Select>
         )}
+
+        {/* Dropdown para seleção de posições */}
+        <Select value={selectedPosition} onValueChange={setSelectedPosition}>
+          <SelectTrigger className="w-full max-w-md">
+            <SelectValue placeholder="Selecione uma Posição" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as Posições</SelectItem>
+            {Object.keys(positionGroups).map((position) => (
+              <SelectItem key={position} value={position}>
+                {position}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Lista de jogadores */}
@@ -92,7 +130,7 @@ const Players = () => {
         <CardHeader>
           <CardTitle>
             {/* Título com Contagem */}
-            Jogadores ({selectedTeamPlayers.length})
+            Jogadores ({filteredPlayers.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -105,14 +143,14 @@ const Players = () => {
             <div className="text-center text-muted-foreground py-4">
               Selecione um time para visualizar os jogadores.
             </div>
-          ) : selectedTeamPlayers.length === 0 ? (
+          ) : filteredPlayers.length === 0 ? (
             <div className="text-center text-muted-foreground py-4">
-              Este time não possui jogadores no momento.
+              Nenhum jogador encontrado para os critérios selecionados.
             </div>
           ) : (
             <ScrollArea>
               <div className="space-y-3">
-                {selectedTeamPlayers
+                {filteredPlayers
                   .map((playerId) => playersData[playerId]) // Obter dados do jogador
                   .filter(Boolean) // Remover jogadores inválidos
                   .map((player) => (
@@ -129,7 +167,6 @@ const Players = () => {
                           </>
                         )}
                       </div>
-
                       {/* Status, se disponível */}
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-xs">
