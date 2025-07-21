@@ -52,15 +52,17 @@ export function useTeamData() {
             if (shadowsRoster) {
               setUserRoster(shadowsRoster);
 
-              // Combinar IDs de starters, reserve, taxi e players
-              const allIds = [
-                ...(shadowsRoster.starters || []),
-                ...(shadowsRoster.reserve || []),
-                ...(shadowsRoster.taxi || []),
-                ...(shadowsRoster.players || []), // Certifique-se de incluir todos os jogadores
-              ].filter((id) => id && id !== "0"); // Remover IDs inválidos como "0", null ou undefined
+              // Combinar IDs de starters, reserve, taxi e players e remover duplicatas
+              const allIds = Array.from(
+                new Set([
+                  ...(shadowsRoster.starters || []),
+                  ...(shadowsRoster.reserve || []),
+                  ...(shadowsRoster.taxi || []),
+                  ...(shadowsRoster.players || []),
+                ])
+              ).filter((id) => id && id !== "0"); // Remove valores inválidos como "0", null ou undefined
 
-              console.log("🎯 IDs de jogadores combinados no roster:", allIds);
+              console.log("🎯 IDs únicos de jogadores combinados no roster (sem duplicatas):", allIds);
               setAllPlayerIds(allIds);
             } else {
               console.warn("⚠️ Nenhum roster encontrado para o usuário 'Shadows'.");
