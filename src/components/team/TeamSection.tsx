@@ -1,88 +1,9 @@
-
-/*
 import { SleeperPlayer } from "@/types/sleeper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { PositionColumn } from "./PositionColumn";
 
-const ROSTER_POSITIONS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'K', 'DEF', 'DL', 'LB', 'DB', 'IDP_FLEX', 'BN'];
-
-interface PlayerWithDetails extends SleeperPlayer {
-  player_id: string;
-}
-
-interface TeamSectionProps {
-  title: string;
-  playerIds: string[];
-  playersData: Record<string, SleeperPlayer>;
-}
-
-export function TeamSection({ title, playerIds, playersData }: TeamSectionProps) {
-  const getPlayersByPosition = (playerIds: string[]) => {
-    const playersByPosition: Record<string, PlayerWithDetails[]> = {};
-    
-    ROSTER_POSITIONS.forEach(position => {
-      playersByPosition[position] = [];
-    });
-
-    playerIds.forEach(playerId => {
-      const player = playersData[playerId];
-      if (player) {
-        const position = player.position || 'UNKNOWN';
-        if (ROSTER_POSITIONS.includes(position)) {
-          playersByPosition[position].push({
-            ...player,
-            player_id: playerId
-          });
-        } else {
-          // Para jogadores de banco, adicionar à posição BN se não tiver posição específica
-          if (!playersByPosition['BN']) {
-            playersByPosition['BN'] = [];
-          }
-          playersByPosition['BN'].push({
-            ...player,
-            player_id: playerId
-          });
-        }
-      }
-    });
-
-    return playersByPosition;
-  };
-
-  const playersByPosition = getPlayersByPosition(playerIds);
-  
-  return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="w-full">
-          <div className="flex gap-4 pb-4">
-            {ROSTER_POSITIONS.map(position => 
-              <PositionColumn 
-                key={position}
-                position={position} 
-                players={playersByPosition[position]} 
-              />
-            )}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </CardContent>
-    </Card>
-  );
-}
-
-*/
-
-import { SleeperPlayer } from "@/types/sleeper";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { PositionColumn } from "./PositionColumn";
-
-// Lista de posições do time
+// Lista de todas as posições possíveis no roster
 const ROSTER_POSITIONS = [
   "QB", "RB", "WR", "TE", "FLEX", "K", "DEF", "DL", "LB", "DB", "IDP_FLEX", "BN"
 ];
@@ -99,53 +20,54 @@ interface TeamSectionProps {
 
 export function TeamSection({ title, playerIds, playersData }: TeamSectionProps) {
   /**
-   * Função para organizar os jogadores por posição do time
+   * Função para organizar os jogadores por posição
    */
   const getPlayersByPosition = (playerIds: string[]) => {
     const playersByPosition: Record<string, PlayerWithDetails[]> = {};
 
-    // Inicializar arrays vazios para todas as posições
-    ROSTER_POSITIONS.forEach(position => {
+    // Inicializar arrays vazios para cada posição definida em ROSTER_POSITIONS
+    ROSTER_POSITIONS.forEach((position) => {
       playersByPosition[position] = [];
     });
 
-    // Itera pelos IDs e os organiza com base na posição
-    playerIds.forEach(playerId => {
+    playerIds.forEach((playerId) => {
       const player = playersData[playerId];
 
       if (player) {
-        const position = player.position || "UNKNOWN"; // Posição desconhecida -> "UNKNOWN"
-
+        // Verificar se o jogador tem uma posição válida
+        const position = player.position || "BN"; // Jogadores sem posição específica vão ao banco
         if (ROSTER_POSITIONS.includes(position)) {
           playersByPosition[position].push({
             ...player,
             player_id: playerId,
           });
         } else {
-          // Jogadores sem posição válida vão para o banco (BN)
-          console.warn(`⚠️ Jogador com posição desconhecida:`, player);
-          if (!playersByPosition["BN"]) {
-            playersByPosition["BN"] = [];
-          }
+          // Caso não esteja em ROSTER_POSITIONS, enviar para "BN" (fallback)
+          console.warn(`⚠️ Posição desconhecida para jogador:`, player);
           playersByPosition["BN"].push({
             ...player,
             player_id: playerId,
           });
         }
       } else {
-        console.error(`❌ Jogador com ID "${playerId}" não encontrado em playersData.`);
+        // Jogadores com ID sem correspondência no playersData
+        console.error(`❌ Dados do jogador não encontrados para ID: ${playerId}`);
+        playersByPosition["BN"].push({
+          player_id: playerId, // Dados mínimos
+          name: "Desconhecido",
+          position: "Indefinido",
+        } as PlayerWithDetails);
       }
     });
 
     return playersByPosition;
   };
 
-  // Organizar os jogadores enviados pelo MyTeam
+  // Organizar os jogadores com base nas posições
   const playersByPosition = getPlayersByPosition(playerIds);
 
-  // Log para conferência
-  console.log(`Seção: "${title}"`);
-  console.log("Jogadores por posição organizados:", playersByPosition);
+  // Logs para conferência
+  console.log(`Seção: "${title}" - Organização por posição:`, playersByPosition);
 
   return (
     <Card className="mb-6">
@@ -154,24 +76,24 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
       </CardHeader>
       <CardContent>
         <ScrollArea className="w-full">
-          {/* Renderiza as colunas de jogadores por posição */}
+          {/* Renderizar as colunas para cada posição */}
           <div className="flex gap-4 pb-4">
-            {ROSTER_POSITIONS.map(position => (
-              <PositionColumn 
+            {ROSTER_POSITIONS.map((position) => (
+              <PositionColumn
                 key={position}
-                position={position} 
-                players={playersByPosition[position]} 
+                position={position}
+                players={playersByPosition[position]}
               />
             ))}
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        {/* Diagnóstico adicional: mostra todos os jogadores recebidos */}
+        {/* Diagnóstico adicional para jogadores não carregados */}
         <div className="mt-6">
           <h3 className="font-bold text-center">Jogadores disponíveis (diagnóstico):</h3>
           <div className="grid grid-cols-4 gap-4">
-            {playerIds.map(playerId => {
+            {playerIds.map((playerId) => {
               const player = playersData[playerId];
               return (
                 <div key={playerId} className="p-2 border rounded">
