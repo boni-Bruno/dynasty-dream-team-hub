@@ -48,9 +48,9 @@ export function useTeamData() {
 
             if (shadowsRoster) {
               const allPlayers = shadowsRoster.players || [];
-              const starterPlayers = shadowsRoster.starters || [];
+              const starterPlayers = (shadowsRoster.starters || []).filter((id) => id && id !== "0"); // Filtrar IDs inválidos
               const taxiPlayers = shadowsRoster.taxi || [];
-              
+
               // Calculando os jogadores no banco
               const benchPlayers = allPlayers.filter(
                 (id) => !starterPlayers.includes(id) && !taxiPlayers.includes(id)
@@ -62,7 +62,7 @@ export function useTeamData() {
               setTaxi(taxiPlayers);
 
               // Logs para depuração
-              console.log("Starters (titulares):", starterPlayers);
+              console.log("Starters (filtrados):", starterPlayers);
               console.log("Bench (reservas):", benchPlayers);
               console.log("Injured Reserve:", shadowsRoster.injured_reserve || []);
               console.log("Taxi Squad:", taxiPlayers);
