@@ -3,7 +3,10 @@ import { AppState, SleeperLeague, SleeperRoster, SleeperPlayer } from "@/types/s
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-const FIXED_LEAGUE_ID = '1181975218791636992';
+const FIXED_LEAGUE_ID = "1181975218791636992";
+
+// Anos fixos para pontuação
+const YEARS = [2025, 2024, 2023, 2022, 2021, 2020];
 
 export function useSleeperData() {
   const [state, setState] = useState<AppState>({
@@ -19,43 +22,26 @@ export function useSleeperData() {
         description: "Tentando conectar à liga do Sleeper",
       });
 
-      console.log('Attempting to connect to league:', leagueId);
-
-      // Call the league endpoint to validate the league ID
-      const { data: leagueData, error } = await supabase.functions.invoke('sleeper-league', {
-        body: { leagueId }
+      const { data: leagueData, error } = await supabase.functions.invoke("sleeper-league", {
+        body: { leagueId },
       });
 
-      console.log('Supabase function response:', { data: leagueData, error });
+      if (error) throw new Error(error.message || "Erro ao conectar com a API do Sleeper");
+      if (!leagueData) throw new Error("Liga não encontrada");
+      if (leagueData.error) throw new Error(leagueData.error);
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw new Error(error.message || "Erro ao conectar com a API do Sleeper");
-      }
-
-      if (!leagueData) {
-        throw new Error("Liga não encontrada");
-      }
-
-      if (leagueData.error) {
-        throw new Error(leagueData.error);
-      }
-
-      // Update state with connected league
       const newState = {
         isConnected: true,
         currentLeague: leagueData,
-        leagueId
+        leagueId,
       };
-      setState(prev => ({
-        ...prev,
-        ...newState
-      }));
 
-      console.log('Connected to fixed league:', leagueData.name);
-      
+      setState((prev) => ({
+        ...prev,
+        ...newState,
+      }));
     } catch (error) {
-      console.error('Connection error:', error);
+      console.error("Connection error:", error);
     }
   }, [toast]);
 
@@ -65,10 +51,10 @@ export function useSleeperData() {
 
   const fetchLeagueData = useCallback(async (leagueId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('sleeper-league', {
-        body: { leagueId }
+      const { data, error } = await supabase.functions.invoke("sleeper-league", {
+        body: { leagueId },
       });
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -79,10 +65,10 @@ export function useSleeperData() {
 
   const fetchRosters = useCallback(async (leagueId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('sleeper-rosters', {
-        body: { leagueId }
+      const { data, error } = await supabase.functions.invoke("sleeper-rosters", {
+        body: { leagueId },
       });
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -93,10 +79,26 @@ export function useSleeperData() {
 
   const fetchPlayers = useCallback(async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('sleeper-players');
-      
+      const { data: playersData, error } = await supabase.functions.invoke("sleeper-players");
+
       if (error) throw error;
-      return data;
+
+      // Adicionar pontuações fixas simuladas para cada jogador
+      const playersWithScores = Object.keys(playersData || {}).reduce((acc, playerId) => {
+        const simulatedScores = YEARS.reduce((scores, year) => {
+          scores[year] = Math.floor(Math.random() * 300); // Pontuações aleatórias (0 a 300)
+          return scores;
+        }, {} as Record<number, number>);
+
+        acc[playerId] = {
+          ...playersData[playerId],
+          scores: simulatedScores,
+        };
+
+        return acc;
+      }, {} as Record<string, SleeperPlayer>);
+
+      return playersWithScores;
     } catch (error) {
       console.error("Error fetching players:", error);
       throw error;
@@ -105,10 +107,10 @@ export function useSleeperData() {
 
   const fetchDrafts = useCallback(async (leagueId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('sleeper-drafts', {
-        body: { leagueId }
+      const { data, error } = await supabase.functions.invoke("sleeper-drafts", {
+        body: { leagueId },
       });
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -119,10 +121,10 @@ export function useSleeperData() {
 
   const fetchTrades = useCallback(async (leagueId: string, week?: number) => {
     try {
-      const { data, error } = await supabase.functions.invoke('sleeper-transactions', {
-        body: { leagueId, week }
+      const { data, error } = await supabase.functions.invoke("sleeper-transactions", {
+        body: { leagueId, week },
       });
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -133,10 +135,10 @@ export function useSleeperData() {
 
   const fetchUsers = useCallback(async (leagueId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('sleeper-users', {
-        body: { leagueId }
+      const { data, error } = await supabase.functions.invoke("sleeper-users", {
+        body: { leagueId },
       });
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -145,11 +147,8 @@ export function useSleeperData() {
     }
   }, []);
 
-  const disconnectFromSleeper = useCallback(() => {
-    // Not applicable for fixed league connection
-  }, []);
+  const disconnectFromSleeper = useCallback(() => {}, []);
 
-  // Auto-connect to fixed league on mount
   useEffect(() => {
     connectToFixedLeague();
   }, [connectToFixedLeague]);
