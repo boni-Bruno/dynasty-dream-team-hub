@@ -25,24 +25,23 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
   const getPlayersByPosition = (playerIds: string[]) => {
     const playersByPosition: Record<string, PlayerWithDetails[]> = {};
 
-    // Inicializar arrays vazios para todas as posições
+    // Inicializar arrays vazios para cada posição
     ROSTER_POSITIONS.forEach((position) => {
       playersByPosition[position] = [];
     });
 
+    // Iterar pelos playerIds e organizar os jogadores por posição
     playerIds.forEach((playerId) => {
-      const player = playersData[playerId]; // Buscar jogador pelo ID
+      const player = playersData[playerId];
 
       if (player) {
-        // Distribuir jogadores em suas posições
-        const position = player.position || "BN"; // Jogadores sem posição específica vão ao banco
+        const position = player.position || "BN"; // Jogadores sem posição vão para o banco
         if (ROSTER_POSITIONS.includes(position)) {
           playersByPosition[position].push({
             ...player,
             player_id: playerId,
           });
         } else {
-          // Jogadores com posição desconhecida vão ao banco (BN)
           console.warn(`⚠️ Posição inválida para jogador:`, player);
           playersByPosition["BN"].push({
             ...player,
@@ -50,11 +49,11 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
           });
         }
       } else {
-        // Jogador não encontrado no playersData
-        console.error(`❌ Jogador com ID "${playerId}" não encontrado no banco de jogadores.`);
+        // Jogadores com ID sem correspondência no playersData
+        console.error(`❌ ID "${playerId}" não encontrado no playersData.`);
         playersByPosition["BN"].push({
           player_id: playerId,
-          name: "Desconhecido",
+          full_name: "Dados não encontrados",
           position: "Indefinido",
         } as PlayerWithDetails);
       }
@@ -63,11 +62,11 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
     return playersByPosition;
   };
 
-  // Organizar os jogadores com base nas posições definidas
+  // Organiza os jogadores enviados para a seção pela posição
   const playersByPosition = getPlayersByPosition(playerIds);
 
-  // Logs de depuração
-  console.log(`🔍 Seção: "${title}" - Organização de jogadores:`, playersByPosition);
+  // Logs para depuração
+  console.log(`🔍 Seção "${title}" - Jogadores por posição:`, playersByPosition);
 
   return (
     <Card className="mb-6">
@@ -76,7 +75,7 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
       </CardHeader>
       <CardContent>
         <ScrollArea className="w-full">
-          {/* Renderizar colunas de jogadores por posição */}
+          {/* Renderizar as colunas dos jogadores por posição */}
           <div className="flex gap-4 pb-4">
             {ROSTER_POSITIONS.map((position) => (
               <PositionColumn
@@ -89,16 +88,16 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
-        {/* Diagnóstico adicional: Jogadores não encontrados */}
+        {/* Diagnóstico adicional: Exibe IDs sem correspondência */}
         <div className="mt-6">
-          <h3 className="font-bold text-center">Diagnóstico (Jogadores Não Encontrados):</h3>
+          <h3 className="font-bold text-center">Jogadores disponíveis (diagnóstico):</h3>
           <div className="grid grid-cols-4 gap-4">
             {playerIds.map((playerId) => {
               const player = playersData[playerId];
               return (
                 <div key={playerId} className="p-2 border rounded">
                   <p>
-                    <strong>Nome:</strong> {player?.name || "Desconhecido"}
+                    <strong>Nome:</strong> {player?.full_name || "Desconhecido"}
                   </p>
                   <p>
                     <strong>Posição:</strong> {player?.position || "Indefinido"}
@@ -108,7 +107,7 @@ export function TeamSection({ title, playerIds, playersData }: TeamSectionProps)
                   </p>
                   {!player && (
                     <p className="text-red-500">
-                      ⚠️ Dados ausentes no `playersData`.
+                      ⚠️ Dados ausentes no playersData.
                     </p>
                   )}
                 </div>
