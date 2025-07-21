@@ -90,7 +90,10 @@ const Players = () => {
       {/* Lista de jogadores */}
       <Card>
         <CardHeader>
-          <CardTitle>Jogadores</CardTitle>
+          <CardTitle>
+            {/* Título com Contagem */}
+            Jogadores ({selectedTeamPlayers.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
