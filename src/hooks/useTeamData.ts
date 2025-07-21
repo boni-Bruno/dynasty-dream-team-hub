@@ -5,10 +5,7 @@ import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 export function useTeamData() {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
   const [userRoster, setUserRoster] = useState<SleeperRoster | null>(null);
-  const [starters, setStarters] = useState<string[]>([]);
-  const [bench, setBench] = useState<string[]>([]);
-  const [injuredReserve, setInjuredReserve] = useState<string[]>([]);
-  const [taxi, setTaxi] = useState<string[]>([]);
+  const [allPlayerIds, setAllPlayerIds] = useState<string[]>([]);
   const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
   const [loading, setLoading] = useState(true);
   const [teamOwner, setTeamOwner] = useState<SleeperUser | null>(null);
@@ -53,24 +50,23 @@ export function useTeamData() {
             if (shadowsRoster) {
               setUserRoster(shadowsRoster);
 
-              // Organizar em categorias
-              setStarters((shadowsRoster.starters || []).filter((id) => id && id !== "0"));
-              setBench((shadowsRoster.reserve || []).filter((id) => id && id !== "0"));
-              setInjuredReserve(
-                (shadowsRoster.injured_reserve || []).filter((id) => id && id !== "0")
-              );
-              setTaxi((shadowsRoster.taxi || []).filter((id) => id && id !== "0"));
+              // Combinar IDs de todos os jogadores (starters + reserve + taxi + injured reserve)
+              const allIds = Array.from(
+                new Set([
+                  ...(shadowsRoster.starters || []),
+                  ...(shadowsRoster.reserve || []),
+                  ...(shadowsRoster.taxi || []),
+                  ...(shadowsRoster.injured_reserve || []),
+                ])
+              ).filter((id) => id && id !== "0"); // Remove IDs inválidos como "0", null ou undefined
 
-              console.log("🎯 Jogadores organizados por categorias:");
-              console.log("Starters:", shadowsRoster.starters);
-              console.log("Bench:", shadowsRoster.reserve);
-              console.log("Injured Reserve:", shadowsRoster.injured_reserve);
-              console.log("Taxi:", shadowsRoster.taxi);
+              console.log("🎯 IDs únicos de jogadores combinados no roster (sem duplicatas):", allIds);
+              setAllPlayerIds(allIds);
             } else {
               console.warn("⚠️ Nenhum roster encontrado para o time 'Shadows'.");
             }
           } else {
-            console.warn("⚠️ Usuário 'Shadows' não encontrado.");
+            console.warn("⚠️ Usuário 'Shadows' não identificado.");
           }
         } else {
           console.warn("⚠️ Rosters ou usuários não encontrados.");
@@ -97,7 +93,7 @@ export function useTeamData() {
       } catch (error) {
         console.error("❌ Erro ao carregar dados do time:", error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Encerrar estado de carregamento
       }
     };
 
@@ -106,10 +102,8 @@ export function useTeamData() {
 
   // Retornar informações necessárias para outros componentes
   return {
-    starters,
-    bench,
-    injuredReserve,
-    taxi,
+    userRoster,
+    allPlayerIds,
     playersData,
     loading,
     teamOwner,
