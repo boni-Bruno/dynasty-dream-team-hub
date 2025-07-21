@@ -32,7 +32,7 @@ export default function MyTeam() {
     );
   }
 
-  // Logs de depuração
+  // Logs de depuração para verificar as categorias
   console.log("Starters:", starters);
   console.log("Bench:", bench);
   console.log("Injured Reserve:", injuredReserve);
@@ -42,11 +42,27 @@ export default function MyTeam() {
     <div className="container mx-auto p-6">
       <TeamHeader teamOwner={teamOwner} />
 
-      {/* Exibição por categorias */}
-      <TeamSection title="Starters" playerIds={starters} playersData={playersData} />
-      <TeamSection title="Bench" playerIds={bench} playersData={playersData} />
-      <TeamSection title="Injured Reserve" playerIds={injuredReserve} playersData={playersData} />
-      <TeamSection title="Taxi Squad" playerIds={taxi} playersData={playersData} />
+      {/* Exibição do time por categorias */}
+      <TeamSection
+        title={`Starters (${starters.length})`} // Título com a quantidade
+        playerIds={starters}
+        playersData={playersData}
+      />
+      <TeamSection
+        title={`Bench (${bench.length})`} // Título com a quantidade
+        playerIds={bench}
+        playersData={playersData}
+      />
+      <TeamSection
+        title={`Injured Reserve (${injuredReserve.length})`} // Título com a quantidade
+        playerIds={injuredReserve}
+        playersData={playersData}
+      />
+      <TeamSection
+        title={`Taxi Squad (${taxi.length})`} // Título com a quantidade
+        playerIds={taxi}
+        playersData={playersData}
+      />
     </div>
   );
 }
