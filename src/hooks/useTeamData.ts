@@ -13,27 +13,25 @@ export function useTeamData() {
   useEffect(() => {
     const loadTeamData = async () => {
       if (!state.isConnected || !state.currentLeague) {
-        console.warn("Usuário desconectado ou nenhuma liga selecionada.");
+        console.warn("Usuário desconectado ou nenhuma liga foi selecionada.");
         return;
       }
 
       setLoading(true);
 
       try {
-        // Buscar dados da API
+        // Buscando os dados necessários
         const [rostersData, playersResponse, usersData] = await Promise.all([
-          fetchRosters(state.currentLeague.league_id), // Dados do roster
-          fetchPlayers(), // Dados de jogadores
-          fetchUsers(state.currentLeague.league_id), // Dados de usuários
+          fetchRosters(state.currentLeague.league_id), // Rosters
+          fetchPlayers(), // Jogadores
+          fetchUsers(state.currentLeague.league_id), // Usuários
         ]);
 
         console.log("✅ Dados de Rosters: ", rostersData);
         console.log("✅ Dados de Usuários: ", usersData);
-        console.log("✅ Dados de Jogadores (playersResponse): ", playersResponse);
 
-        // Garantir que existem rosters e usuários
+        // Encontrando o usuário associado ao time "Shadows"
         if (rostersData?.length > 0 && usersData) {
-          // Encontrar o usuário "Shadows"
           const shadowsOwner = usersData.find(
             (user: SleeperUser) =>
               user.metadata?.team_name === "Shadows" ||
@@ -42,11 +40,9 @@ export function useTeamData() {
           );
 
           if (shadowsOwner) {
+            console.log("✅ Usuário 'Shadows' encontrado:", shadowsOwner);
             setTeamOwner(shadowsOwner);
 
-            console.log("✅ Usuário 'Shadows' encontrado:", shadowsOwner);
-
-            // Encontrar o roster desse usuário
             const shadowsRoster = rostersData.find(
               (roster: SleeperRoster) => roster.owner_id === shadowsOwner.user_id
             );
@@ -54,64 +50,61 @@ export function useTeamData() {
             if (shadowsRoster) {
               setUserRoster(shadowsRoster);
 
-              console.log("✅ Roster associado ao Shadows encontrado:", shadowsRoster);
-
-              // Combinar IDs de todos os jogadores no roster
+              // Coletar todos os IDs de jogadores no roster
               const allIds = [
                 ...(shadowsRoster.starters || []),
                 ...(shadowsRoster.reserve || []),
                 ...(shadowsRoster.taxi || []),
-              ];
+              ].filter((id) => id); // Filtrar IDs válidos (remover null/undefined)
 
-              console.log("🎯 IDs de jogadores combinados no roster:", allIds);
-
+              console.log("🎯 IDs de jogadores no roster:", allIds);
               setAllPlayerIds(allIds);
             } else {
-              console.warn("⚠️ Roster do usuário 'Shadows' não encontrado.");
+              console.warn("⚠️ Nenhum roster encontrado para o usuário 'Shadows'.");
             }
           } else {
-            console.warn("⚠️ Usuário 'Shadows' não encontrado.");
+            console.warn("⚠️ Usuário 'Shadows' não identificado.");
           }
         } else {
-          console.warn("⚠️ Nenhum roster ou usuário encontrado.");
+          console.warn("⚠️ Rosters ou usuários não encontrados.");
         }
 
-        // Processar os dados de jogadores
+        // Processando dados dos jogadores
         if (playersResponse) {
           console.log("✅ Dados de Jogadores Recebidos (playersResponse):", playersResponse);
 
-          // Transformar jogadores no formato indexado
-          const formattedPlayers: Record<string, SleeperPlayer> = {};
+          // Transformar os dados em um objeto indexado por player_id
+          const formattedPlayersData: Record<string, SleeperPlayer> = {};
           Object.keys(playersResponse).forEach((key) => {
             const player = playersResponse[key];
             if (player) {
-              formattedPlayers[key] = {
+              formattedPlayersData[key] = {
                 ...player,
-                player_id: key, // Certificar de adicionar o ID explicitamente
+                player_id: key, // Adicionar o player_id explicitamente
               };
             }
           });
 
-          console.log("🎯 Dados de jogadores formatados:", formattedPlayers);
-          setPlayersData(formattedPlayers);
+          console.log("🎯 Dados formatados de jogadores:", formattedPlayersData);
+          setPlayersData(formattedPlayersData);
         } else {
-          console.warn("⚠️ Nenhum jogador retornado na API.");
+          console.warn("⚠️ Nenhum dado encontrado no playersResponse.");
         }
       } catch (error) {
         console.error("❌ Erro ao carregar dados do time:", error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Encerrar o estado de carregamento
       }
     };
 
     loadTeamData();
   }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers, fetchUsers]);
 
-  // Retornar os dados necessários ao componente
+  // Retornar informações necessárias para outros componentes
   return {
     userRoster,
-    allPlayerIds,
     playersData,
+    allPlayerIds,
     loading,
     teamOwner,
     isConnected: state.isConnected,
