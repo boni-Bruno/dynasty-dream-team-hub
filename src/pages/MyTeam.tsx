@@ -1,54 +1,34 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { useTeamData } from "@/hooks/useTeamData";
 import { TeamSection } from "@/components/team/TeamSection";
 import { LoadingSkeleton } from "@/components/team/LoadingSkeleton";
 import { TeamHeader } from "@/components/team/TeamHeader";
 
 export default function MyTeam() {
-  // Dados fornecidos pelo hook customizado
-  const { starters, bench, injuredReserve, taxi, playersData, loading, teamOwner, isConnected } =
-    useTeamData();
+  const { allPlayerIds, playersData, loading, teamOwner, isConnected } = useTeamData();
 
-  // Exibição enquanto os dados estão sendo carregados
   if (loading) {
-    console.log("Carregando dados do time...");
     return <LoadingSkeleton />;
   }
 
-  // Tratamento para caso ainda não esteja conectado ou dados estejam ausentes
-  if (!isConnected || (!starters.length && !bench.length && !injuredReserve.length && !taxi.length)) {
-    console.warn("Usuário não está conectado ou os jogadores não foram encontrados.");
+  if (!isConnected || !allPlayerIds.length) {
     return (
       <div className="container mx-auto p-6">
         <TeamHeader teamOwner={teamOwner} />
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-muted-foreground">
-              Não foi possível carregar os dados do seu time. Tente novamente mais tarde.
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center text-muted-foreground">
+          Não foi possível carregar os dados do seu time. Tente novamente mais tarde.
+        </div>
       </div>
     );
   }
 
-  // Logs de validação do que está sendo enviado
-  console.log("Jogadores Starters:", starters);
-  console.log("Jogadores Bench:", bench);
-  console.log("Jogadores Injured Reserve:", injuredReserve);
-  console.log("Jogadores Taxi:", taxi);
-  console.log("Detalhes dos jogadores (playersData):", playersData);
-
   return (
     <div className="container mx-auto p-6">
-      {/* Cabeçalho do time */}
       <TeamHeader teamOwner={teamOwner} />
-
-      {/* Seções divididas por categorias */}
-      <TeamSection title="Starters" playerIds={starters} playersData={playersData} />
-      <TeamSection title="Bench" playerIds={bench} playersData={playersData} />
-      <TeamSection title="Injured Reserve" playerIds={injuredReserve} playersData={playersData} />
-      <TeamSection title="Taxi Squad" playerIds={taxi} playersData={playersData} />
+      <TeamSection
+        title="Meu Time"
+        playerIds={allPlayerIds}
+        playersData={playersData}
+      />
     </div>
   );
 }
