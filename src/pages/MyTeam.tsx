@@ -16,12 +16,12 @@ export default function MyTeam() {
   } = useTeamData();
 
   if (loading) {
-    console.log("Carregando dados do time...");
+    console.log("Carregando dados...");
     return <LoadingSkeleton />;
   }
 
   if (!isConnected || (!starters.length && !bench.length && !injuredReserve.length && !taxi.length)) {
-    console.warn("Usuário não está conectado ou os jogadores não foram encontrados.");
+    console.warn("Erro ao carregar os dados do time.");
     return (
       <div className="container mx-auto p-6">
         <TeamHeader teamOwner={teamOwner} />
@@ -32,12 +32,17 @@ export default function MyTeam() {
     );
   }
 
+  // Logs de depuração
+  console.log("Starters:", starters);
+  console.log("Bench:", bench);
+  console.log("Injured Reserve:", injuredReserve);
+  console.log("Taxi Squad:", taxi);
+
   return (
     <div className="container mx-auto p-6">
-      {/* Cabeçalho do Time */}
       <TeamHeader teamOwner={teamOwner} />
 
-      {/* Seções do Time */}
+      {/* Exibição por categorias */}
       <TeamSection title="Starters" playerIds={starters} playersData={playersData} />
       <TeamSection title="Bench" playerIds={bench} playersData={playersData} />
       <TeamSection title="Injured Reserve" playerIds={injuredReserve} playersData={playersData} />
