@@ -20,17 +20,18 @@ export function useTeamData() {
       setLoading(true);
 
       try {
-        // Buscando os dados necessários
+        // Buscar dados necessários da API
         const [rostersData, playersResponse, usersData] = await Promise.all([
-          fetchRosters(state.currentLeague.league_id), // Rosters
-          fetchPlayers(), // Jogadores
-          fetchUsers(state.currentLeague.league_id), // Usuários
+          fetchRosters(state.currentLeague.league_id),
+          fetchPlayers(),
+          fetchUsers(state.currentLeague.league_id),
         ]);
 
-        console.log("✅ Dados de Rosters: ", rostersData);
-        console.log("✅ Dados de Usuários: ", usersData);
+        console.log("✅ Dados completos de Rosters: ", JSON.stringify(rostersData, null, 2));
+        console.log("✅ Dados de Jogadores Recebidos (playersResponse):", playersResponse);
+        console.log("✅ Dados de Usuários:", usersData);
 
-        // Encontrando o usuário associado ao time "Shadows"
+        // Encontrar o usuário associado ao time "Shadows"
         if (rostersData?.length > 0 && usersData) {
           const shadowsOwner = usersData.find(
             (user: SleeperUser) =>
@@ -43,6 +44,7 @@ export function useTeamData() {
             console.log("✅ Usuário 'Shadows' encontrado:", shadowsOwner);
             setTeamOwner(shadowsOwner);
 
+            // Encontrar o roster do time "Shadows"
             const shadowsRoster = rostersData.find(
               (roster: SleeperRoster) => roster.owner_id === shadowsOwner.user_id
             );
@@ -50,15 +52,15 @@ export function useTeamData() {
             if (shadowsRoster) {
               setUserRoster(shadowsRoster);
 
-              // Coletar todos os IDs de jogadores no roster
+              // Combinar IDs de starters, reserve, taxi e players
               const allIds = [
-              ...(shadowsRoster.starters || []),
-              ...(shadowsRoster.reserve || []),
-              ...(shadowsRoster.taxi || []),
-              ...(shadowsRoster.players || []), // Inclui todos os jogadores do roster (se existir)
-              ].filter((id) => id && id !== "0"); // Remove IDs inválidos como "0", null ou undefined
+                ...(shadowsRoster.starters || []),
+                ...(shadowsRoster.reserve || []),
+                ...(shadowsRoster.taxi || []),
+                ...(shadowsRoster.players || []), // Certifique-se de incluir todos os jogadores
+              ].filter((id) => id && id !== "0"); // Remover IDs inválidos como "0", null ou undefined
 
-              console.log("🎯 IDs de jogadores no roster:", allIds);
+              console.log("🎯 IDs de jogadores combinados no roster:", allIds);
               setAllPlayerIds(allIds);
             } else {
               console.warn("⚠️ Nenhum roster encontrado para o usuário 'Shadows'.");
@@ -70,18 +72,15 @@ export function useTeamData() {
           console.warn("⚠️ Rosters ou usuários não encontrados.");
         }
 
-        // Processando dados dos jogadores
+        // Processar dados dos jogadores
         if (playersResponse) {
-          console.log("✅ Dados de Jogadores Recebidos (playersResponse):", playersResponse);
-
-          // Transformar os dados em um objeto indexado por player_id
           const formattedPlayersData: Record<string, SleeperPlayer> = {};
           Object.keys(playersResponse).forEach((key) => {
             const player = playersResponse[key];
             if (player) {
               formattedPlayersData[key] = {
                 ...player,
-                player_id: key, // Adicionar o player_id explicitamente
+                player_id: key, // Adiciona o player_id explicitamente
               };
             }
           });
@@ -94,7 +93,7 @@ export function useTeamData() {
       } catch (error) {
         console.error("❌ Erro ao carregar dados do time:", error);
       } finally {
-        setLoading(false); // Encerrar o estado de carregamento
+        setLoading(false); // Encerrar estado de carregamento
       }
     };
 
