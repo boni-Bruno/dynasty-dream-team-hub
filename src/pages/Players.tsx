@@ -18,6 +18,9 @@ const positionGroups = {
   DB: ["CB", "DB", "S"],
 };
 
+// Anos fixos para exibição
+const YEARS = [2025, 2024, 2023, 2022, 2021, 2020];
+
 const Players = () => {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null); // Time selecionado
@@ -78,6 +81,12 @@ const Players = () => {
   const getTeamName = (ownerId: string): string => {
     const user = users.find((u) => u.user_id === ownerId);
     return user?.metadata.team_name || user?.display_name || "Time Desconhecido";
+  };
+
+  // Gerar pontuações fictícias caso não existam
+  const getPlayerScores = (playerId: string) => {
+    const scores = playersData[playerId]?.scores || {}; // Obter pontuações fictícias para cada ano
+    return YEARS.map((year) => scores[year] || "N/A");
   };
 
   return (
@@ -154,24 +163,29 @@ const Players = () => {
                   .map((playerId) => playersData[playerId]) // Obter dados do jogador
                   .filter(Boolean) // Remover jogadores inválidos
                   .map((player) => (
-                    <div key={player.player_id} className="p-3 border rounded-lg">
-                      <h4 className="font-medium">
-                        {player.first_name} {player.last_name}
-                      </h4>
-                      <div className="text-muted-foreground text-sm">
-                        <span>{player.position || "Posição não disponível"}</span>
-                        {player.team && (
-                          <>
-                            <span> • </span>
-                            <span>{player.team}</span>
-                          </>
-                        )}
+                    <div key={player.player_id} className="p-3 border rounded-lg flex justify-between items-center">
+                      <div>
+                        <h4 className="font-medium">
+                          {player.first_name} {player.last_name}
+                        </h4>
+                        <div className="text-muted-foreground text-sm">
+                          <span>{player.position || "Posição não disponível"}</span>
+                          {player.team && (
+                            <>
+                              <span> • </span>
+                              <span>{player.team}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      {/* Status, se disponível */}
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {player.status || "Sem status"}
-                        </Badge>
+                      {/* Tabela de Pontuação */}
+                      <div className="flex space-x-4">
+                        {getPlayerScores(player.player_id).map((score, index) => (
+                          <div key={YEARS[index]} className="text-center">
+                            <span className="block font-medium">{YEARS[index]}</span>
+                            <span className="text-muted-foreground text-sm">{score}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
