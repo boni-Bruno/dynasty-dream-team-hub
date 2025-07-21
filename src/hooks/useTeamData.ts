@@ -5,7 +5,7 @@ import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 export function useTeamData() {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
   const [starters, setStarters] = useState<string[]>([]);
-  const [bench, setBench] = useState<string[]>([]); // Banco de reservas
+  const [bench, setBench] = useState<string[]>([]);
   const [injuredReserve, setInjuredReserve] = useState<string[]>([]);
   const [taxi, setTaxi] = useState<string[]>([]);
   const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
@@ -22,6 +22,7 @@ export function useTeamData() {
       setLoading(true);
 
       try {
+        // Buscar dados necessários da API Sleeper
         const [rostersData, playersResponse, usersData] = await Promise.all([
           fetchRosters(state.currentLeague.league_id),
           fetchPlayers(),
@@ -32,7 +33,7 @@ export function useTeamData() {
         console.log("✅ Players Data:", playersResponse);
         console.log("✅ Users Data:", usersData);
 
-        if (rostersData?.length && usersData) {
+        if (rostersData?.length > 0 && usersData) {
           const shadowsOwner = usersData.find(
             (user: SleeperUser) =>
               user.metadata?.team_name === "Shadows" ||
@@ -46,21 +47,30 @@ export function useTeamData() {
             );
 
             if (shadowsRoster) {
-              setStarters(shadowsRoster.starters || []);
-              setBench(shadowsRoster.reserve || []); // Setando o banco de reservas
-              setInjuredReserve(shadowsRoster.injured_reserve || []);
-              setTaxi(shadowsRoster.taxi || []);
+              const allPlayers = shadowsRoster.players || [];
+              const starterPlayers = shadowsRoster.starters || [];
+              const taxiPlayers = shadowsRoster.taxi || [];
+              
+              // Calculando os jogadores no banco
+              const benchPlayers = allPlayers.filter(
+                (id) => !starterPlayers.includes(id) && !taxiPlayers.includes(id)
+              );
 
-              // Logs para verificar os jogadores atribuídos por categoria
-              console.log("Starters (titulares):", shadowsRoster.starters);
-              console.log("Bench (reservas):", shadowsRoster.reserve);
-              console.log("Injured Reserve:", shadowsRoster.injured_reserve);
-              console.log("Taxi Squad:", shadowsRoster.taxi);
+              setStarters(starterPlayers);
+              setBench(benchPlayers);
+              setInjuredReserve(shadowsRoster.injured_reserve || []);
+              setTaxi(taxiPlayers);
+
+              // Logs para depuração
+              console.log("Starters (titulares):", starterPlayers);
+              console.log("Bench (reservas):", benchPlayers);
+              console.log("Injured Reserve:", shadowsRoster.injured_reserve || []);
+              console.log("Taxi Squad:", taxiPlayers);
             } else {
               console.warn("⚠️ Nenhum roster encontrado para o time 'Shadows'.");
             }
           } else {
-            console.warn("⚠️ Usuário 'Shadows' não foi identificado.");
+            console.warn("⚠️ Usuário 'Shadows' não identificado.");
           }
         } else {
           console.warn("⚠️ Rosters ou usuários estão vazios.");
