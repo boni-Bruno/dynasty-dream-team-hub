@@ -34,25 +34,26 @@ function getGroupedPosition(position) {
   return position; // Retorna a posição original se não estiver no mapa
 }
 
-/** Função para Ordenação com Base na Prioridade da Posição */
+/** Função para Ordenar Jogadores com Base nas Posições */
 function sortByPosition(playerA, playerB, playersData) {
   const positionA = playersData[playerA]?.position || "N/A";
   const positionB = playersData[playerB]?.position || "N/A";
 
-  // Determina a posição agrupada
+  // Agrupa posições antes de comparar
   const groupedPositionA = getGroupedPosition(positionA);
   const groupedPositionB = getGroupedPosition(positionB);
 
-  // Usa o índice de `positionOrder` para comparar a prioridade
+  // Obtém os índices das posições na ordem desejada
   const indexA = positionOrder.indexOf(groupedPositionA);
   const indexB = positionOrder.indexOf(groupedPositionB);
 
-  // Se as posições não estão na ordem definida, colocamos no final
+  // Jogadores com posições fora da ordem vão para o final
   if (indexA === -1 && indexB === -1) return 0; // Mantém a ordem original
   if (indexA === -1) return 1; // `A` vai para o final
   if (indexB === -1) return -1; // `B` vai para o final
 
-  return indexA - indexB; // Compara os índices para ordenar
+  // Retorna a ordem correta com base nos índices
+  return indexA - indexB;
 }
 
 export default function MyTeam() {
@@ -84,7 +85,7 @@ export default function MyTeam() {
     );
   }
 
-  // Processar o agrupamento e ordenação das posições no playersData
+  // Processar o agrupamento e ordenação de jogadores
   const groupedPlayersData = Object.keys(playersData).reduce((acc, playerId) => {
     const player = playersData[playerId];
     const groupedPosition = getGroupedPosition(player.position || "N/A"); // Agrupa a posição do jogador
@@ -92,7 +93,7 @@ export default function MyTeam() {
     return acc;
   }, {});
 
-  // Ordenar os jogadores dentro de cada categoria
+  // Ordenar cada lista de jogadores com base nas posições
   const sortedStarters = [...starters].sort((a, b) =>
     sortByPosition(a, b, groupedPlayersData)
   );
@@ -106,7 +107,7 @@ export default function MyTeam() {
     sortByPosition(a, b, groupedPlayersData)
   );
 
-  // Logs de depuração
+  // Logs para depuração (remover em produção, se quiser)
   console.log("Ordenação e Agrupamento:");
   console.log("Starters Ordenados:", sortedStarters);
   console.log("Bench Ordenado:", sortedBench);
