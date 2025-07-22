@@ -34,10 +34,10 @@ function getGroupedPosition(position) {
   return position; // Retorna a posição original se não estiver no mapa
 }
 
-/** Função para Ordenar Jogadores com Base nas Posições */
+/** Função para Ordenar Jogadores Baseado na Ordem Desejada */
 function sortByPosition(playerA, playerB, playersData) {
-  const positionA = playersData[playerA]?.position || "N/A";
-  const positionB = playersData[playerB]?.position || "N/A";
+  const positionA = playersData[playerA]?.position || "N/A"; // Posição do jogador A
+  const positionB = playersData[playerB]?.position || "N/A"; // Posição do jogador B
 
   // Agrupa posições antes de comparar
   const groupedPositionA = getGroupedPosition(positionA);
@@ -47,12 +47,12 @@ function sortByPosition(playerA, playerB, playersData) {
   const indexA = positionOrder.indexOf(groupedPositionA);
   const indexB = positionOrder.indexOf(groupedPositionB);
 
-  // Jogadores com posições fora da ordem vão para o final
-  if (indexA === -1 && indexB === -1) return 0; // Mantém a ordem original
-  if (indexA === -1) return 1; // `A` vai para o final
-  if (indexB === -1) return -1; // `B` vai para o final
+  // Caso posição não esteja na ordem, coloca no final
+  if (indexA === -1 && indexB === -1) return 0; // Sem ordem definida, mantém posição original
+  if (indexA === -1) return 1; // A vai para o final
+  if (indexB === -1) return -1; // B vai para o final
 
-  // Retorna a ordem correta com base nos índices
+  // Ordena com base no índice
   return indexA - indexB;
 }
 
@@ -85,15 +85,15 @@ export default function MyTeam() {
     );
   }
 
-  // Processar o agrupamento e ordenação de jogadores
+  // Processar o agrupamento e ordenação de posições
   const groupedPlayersData = Object.keys(playersData).reduce((acc, playerId) => {
     const player = playersData[playerId];
     const groupedPosition = getGroupedPosition(player.position || "N/A"); // Agrupa a posição do jogador
-    acc[playerId] = { ...player, position: groupedPosition }; // Sobrescreve com a posição agrupada
+    acc[playerId] = { ...player, position: groupedPosition }; // Atualiza para posição agrupada
     return acc;
   }, {});
 
-  // Ordenar cada lista de jogadores com base nas posições
+  // Ordenar jogadores de cada categoria com base em posições
   const sortedStarters = [...starters].sort((a, b) =>
     sortByPosition(a, b, groupedPlayersData)
   );
@@ -107,37 +107,36 @@ export default function MyTeam() {
     sortByPosition(a, b, groupedPlayersData)
   );
 
-  // Logs para depuração (remover em produção, se quiser)
-  console.log("Ordenação e Agrupamento:");
-  console.log("Starters Ordenados:", sortedStarters);
-  console.log("Bench Ordenado:", sortedBench);
-  console.log("Injured Reserve Ordenado:", sortedInjuredReserve);
-  console.log("Taxi Squad Ordenado:", sortedTaxi);
+  // Logs Informativos no Console (Usando os Nomes dos Jogadores)
+  console.log("Starters Ordenados:", sortedStarters.map((id) => groupedPlayersData[id]?.full_name || id));
+  console.log("Bench Ordenado:", sortedBench.map((id) => groupedPlayersData[id]?.full_name || id));
+  console.log("Injured Reserve Ordenado:", sortedInjuredReserve.map((id) => groupedPlayersData[id]?.full_name || id));
+  console.log("Taxi Squad Ordenado:", sortedTaxi.map((id) => groupedPlayersData[id]?.full_name || id));
 
   return (
     <div className="container mx-auto p-6">
       <TeamHeader teamOwner={teamOwner} />
 
-      {/* Exibição do time por categorias */}
+      {/* Cada categoria será exibida ordenada */}
       <TeamSection
         title={`Starters (${sortedStarters.length})`}
         playerIds={sortedStarters}
-        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
+        playersData={groupedPlayersData} // Dados com posições agrupadas
       />
       <TeamSection
         title={`Bench (${sortedBench.length})`}
         playerIds={sortedBench}
-        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
+        playersData={groupedPlayersData} // Dados com posições agrupadas
       />
       <TeamSection
         title={`Injured Reserve (${sortedInjuredReserve.length})`}
         playerIds={sortedInjuredReserve}
-        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
+        playersData={groupedPlayersData} // Dados com posições agrupadas
       />
       <TeamSection
         title={`Taxi Squad (${sortedTaxi.length})`}
         playerIds={sortedTaxi}
-        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
+        playersData={groupedPlayersData} // Dados com posições agrupadas
       />
     </div>
   );
