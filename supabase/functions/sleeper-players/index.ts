@@ -13,9 +13,9 @@ serve(async (req) => {
   try {
     console.log("🏈 Sleeper Players function called");
 
-    /** =========================
-     * 1. Fetch NFL Players Data
-     * ========================= */
+    /** ============================
+     * 1. Fetch Players Data
+     * ============================ */
     console.log("🔄 Fetching NFL players data...");
     const playersResponse = await fetch("https://api.sleeper.app/v1/players/nfl");
     if (!playersResponse.ok) {
@@ -23,52 +23,46 @@ serve(async (req) => {
       throw new Error(`Error fetching players: ${playersResponse.status}`);
     }
     const players = await playersResponse.json();
-    console.log(`✅ Players data fetched. Total players: ${Object.keys(players).length}`);
+    console.log(`✅ Players fetched: ${Object.keys(players).length}`);
 
-    /** =========================
-     * 2. Fetch Scores for 2023
-     * ========================= */
-    console.log("🔄 Fetching NFL scores for 2023...");
+    /** ============================
+     * 2. Fetch Scores Data (2023)
+     * ============================ */
+    console.log("🔄 Fetching scores for 2023...");
     const scoresResponse = await fetch("https://api.sleeper.app/v1/stats/nfl/regular/2023");
     if (!scoresResponse.ok) {
       console.error("❌ Error fetching scores:", scoresResponse.status);
       throw new Error(`Error fetching scores: ${scoresResponse.status}`);
     }
-    const scores = await scoresResponse.json();
-    console.log(`✅ Scores data fetched. Total scores: ${Object.keys(scores || {}).length}`);
+    const scores = await scoresResponse.json(); // Obtenção de todas as pontuações
+    console.log(`✅ Scores fetched for 2023: ${Object.keys(scores || {}).length}`);
 
-    /** =========================
+    /** ============================
      * 3. Combine Players and Scores
-     * ========================= */
-    // Função para calcular HALF-PPR manualmente
-    const calculateHalfPPR = (playerYearScores: Record<string, any>) => {
-      const receptions = playerYearScores.receptions || 0; // Números de recepções
-      const stdPoints = playerYearScores.pts_std || 0; // Pontuação Standard
-      return stdPoints + receptions * 0.5; // Fórmula do HALF-PPR
-    };
-
-    console.log("🔄 Combining players with scores...");
+     * ============================ */
+    console.log("🔗 Combining players with scores...");
     const playersWithScores = Object.keys(players).reduce((acc, playerId) => {
-      const player = players[playerId];
-      const playerScores = scores[playerId] || {}; // Busca pontuação do jogador
+      const player = players[playerId]; // Dados básicos do jogador
+      const playerScores = scores[playerId] || {}; // Dados de pontuação do jogador para 2023
 
-      const scores = {
-        "2023": playerScores.pts_half_ppr || calculateHalfPPR(playerScores),
-      };
+      // Adicione a pontuação HALF-PPR (ou calcula manualmente se necessário)
+      const halfPPR = playerScores.pts_half_ppr || 0;
 
       acc[playerId] = {
-        ...player, // Dados básicos do jogador
-        scores, // Pontuações (HALF-PPR)
+        ...player,
+        scores: {
+          "2023": halfPPR, // Retorna apenas 2023; ajuste para mais anos, se necessário
+        },
       };
 
       return acc;
     }, {});
 
-    console.log("✅ Players combined with scores successfully");
+    console.log("✅ Players combined with scores successfully!");
 
-    /** =========================
-     * 4. Send Response
-     * ========================= */
+    /** ============================
+     * 4. Return Response
+     * ============================ */
     return new Response(
       JSON.stringify(playersWithScores),
       {
@@ -82,11 +76,13 @@ serve(async (req) => {
     console.error("❌ Error in Sleeper Players function:", error);
 
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({
+        error: error.message || "Internal server error",
+      }),
       {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json" 
         },
       }
     );
