@@ -80,6 +80,23 @@ export default function MyTeam() {
         <div className="text-center text-muted-foreground">
           Não foi possível carregar os dados do seu time. Tente novamente mais tarde.
         </div>
+      </div>
+    );
+  }
+
+  // Processar o agrupamento e ordenação das posições no playersData
+  const groupedPlayersData = Object.keys(playersData).reduce((acc, playerId) => {
+    const player = playersData[playerId];
+    const groupedPosition = getGroupedPosition(player.position || "N/A"); // Agrupa a posição do jogador
+    acc[playerId] = { ...player, position: groupedPosition }; // Sobrescreve com a posição agrupada
+    return acc;
+  }, {});
+
+  // Ordenar os jogadores dentro de cada categoria
+  const sortedStarters = [...starters].sort((a, b) =>
+    sortByPosition(a, b, groupedPlayersData)
+  );
+  const sortedBench = [...bench].sort((a, b) =>
     sortByPosition(a, b, groupedPlayersData)
   );
   const sortedInjuredReserve = [...injuredReserve].sort((a, b) =>
@@ -89,8 +106,9 @@ export default function MyTeam() {
     sortByPosition(a, b, groupedPlayersData)
   );
 
-  // Logs de depuração1
-  console.log("Ordenação e Agrupamento:");1
+  // Logs de depuração
+  console.log("Ordenação e Agrupamento:");
+  console.log("Starters Ordenados:", sortedStarters);
   console.log("Bench Ordenado:", sortedBench);
   console.log("Injured Reserve Ordenado:", sortedInjuredReserve);
   console.log("Taxi Squad Ordenado:", sortedTaxi);
