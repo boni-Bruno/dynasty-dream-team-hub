@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,52 +16,61 @@ serve(async (req) => {
     /** =========================
      * 1. Fetch NFL Players Data
      * ========================= */
-    console.log("🔄 Fetching NFL players data from Sleeper API...");
+    console.log("🔄 Fetching NFL players data...");
     const playersResponse = await fetch("https://api.sleeper.app/v1/players/nfl");
     if (!playersResponse.ok) {
       console.error("❌ Error fetching players:", playersResponse.status);
       throw new Error(`Error fetching players: ${playersResponse.status}`);
     }
     const players = await playersResponse.json();
-    console.log(`✅ Players data fetched: ${Object.keys(players).length} players`);
+    console.log(`✅ Players data fetched. Total players: ${Object.keys(players).length}`);
 
     /** =========================
      * 2. Fetch Scores for 2023
-     * (outras temporadas podem ser adicionadas depois)
      * ========================= */
-    console.log("🔄 Fetching NFL player scores for 2023 from Sleeper API...");
+    console.log("🔄 Fetching NFL scores for 2023...");
     const scoresResponse = await fetch("https://api.sleeper.app/v1/stats/nfl/regular/2023");
     if (!scoresResponse.ok) {
       console.error("❌ Error fetching scores:", scoresResponse.status);
       throw new Error(`Error fetching scores: ${scoresResponse.status}`);
     }
     const scores = await scoresResponse.json();
-    console.log(`✅ Scores data fetched for 2023: ${Object.keys(scores || {}).length} players`);
+    console.log(`✅ Scores data fetched. Total scores: ${Object.keys(scores || {}).length}`);
 
     /** =========================
-     * 3. Combine Players & Scores
+     * 3. Combine Players and Scores
      * ========================= */
+    // Função para calcular HALF-PPR manualmente
+    const calculateHalfPPR = (playerYearScores: Record<string, any>) => {
+      const receptions = playerYearScores.receptions || 0; // Números de recepções
+      const stdPoints = playerYearScores.pts_std || 0; // Pontuação Standard
+      return stdPoints + receptions * 0.5; // Fórmula do HALF-PPR
+    };
+
     console.log("🔄 Combining players with scores...");
     const playersWithScores = Object.keys(players).reduce((acc, playerId) => {
       const player = players[playerId];
-      const playerScores = scores[playerId] || {}; // Pontuações do jogador (se existirem)
+      const playerScores = scores[playerId] || {}; // Busca pontuação do jogador
+
+      const scores = {
+        "2023": playerScores.pts_half_ppr || calculateHalfPPR(playerScores),
+      };
 
       acc[playerId] = {
         ...player, // Dados básicos do jogador
-        scores: {
-          "2023": playerScores.pts_half_ppr || 0, // Usamos HALF-PPR aqui
-        },
+        scores, // Pontuações (HALF-PPR)
       };
+
       return acc;
     }, {});
 
-    console.log("✅ Players with scores combined successfully");
+    console.log("✅ Players combined with scores successfully");
 
     /** =========================
-     * 4. Return Data
+     * 4. Send Response
      * ========================= */
     return new Response(
-      JSON.stringify(playersWithScores), // Retorna os jogadores combinados com as pontuações
+      JSON.stringify(playersWithScores),
       {
         headers: {
           ...corsHeaders,
@@ -71,14 +79,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("❌ Error in sleeper-players function:", error);
+    console.error("❌ Error in Sleeper Players function:", error);
 
     return new Response(
-      JSON.stringify({
-        error: error.message || "Internal server error",
-      }),
+      JSON.stringify({ error: error.message || "Internal server error" }),
       {
-        status: 500,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
