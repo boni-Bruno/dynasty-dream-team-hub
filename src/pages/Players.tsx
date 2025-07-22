@@ -2,84 +2,104 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { useSleeperData } from "@/hooks/useSleeperData";
-import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 
-// Anos suportados
 const YEARS = [2023];
 
 const Players = () => {
-  const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
+  const [playersData, setPlayersData] = useState({});
+  const [rosters, setRosters] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Carregar dados do backend
+  // Carregar jogadores e times do backend
   useEffect(() => {
-    const loadPlayers = async () => {
+    const fetchData = async () => {
       setLoading(true);
 
       try {
-        const response = await fetch("https://<YOUR_SUPABASE_PROJECT>.functions.supabase.co/sleeper-players");
+        const response = await fetch(
+          "https://<YOUR_SUPABASE_PROJECT>.functions.supabase.co/sleeper-players"
+        );
         const data = await response.json();
-        setPlayersData(data);
+
+        setPlayersData(data.players);
+        setRosters(data.rosters);
       } catch (error) {
-        console.error("❌ Erro ao carregar jogadores:", error);
+        console.error("❌ Erro ao carregar dados:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadPlayers();
+    fetchData();
   }, []);
 
+  // Filtrar jogadores por time selecionado
   const filteredPlayers = useMemo(() => {
-    return Object.values(playersData);
-  }, [playersData]);
+    if (!selectedTeam) return Object.values(playersData);
+
+    const rosterPlayers = rosters.find((roster) => roster.owner_id === selectedTeam)?.players || [];
+    return rosterPlayers.map((playerId) => playersData[playerId]).filter(Boolean);
+  }, [playersData, rosters, selectedTeam]);
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Jogadores</h1>
+        <h1 className="text-3xl font-bold">Jogadores</h1>
+        <p>Selecione um time para visualizar os jogadores e as pontuações.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Jogadores ({filteredPlayers.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center py-4">
-              <Loader2 className="animate-spin h-6 w-6 mr-2" />
-              Carregando jogadores...
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredPlayers.map((player) => (
-                <div key={player.player_id} className="p-3 border rounded-lg flex justify-between items-center">
-                  {/* Informações gerais do jogador */}
-                  <div>
-                    <h4 className="font-medium">
-                      {player.full_name} ({player.position})
-                    </h4>
-                    <p className="text-muted-foreground text-sm">{player.team}</p>
-                  </div>
+      {loading ? (
+        <div className="flex items-center justify-center">
+          <Loader2 className="animate-spin h-6 w-6 mr-2" />
+          Carregando...
+        </div>
+      ) : (
+        <>
+          {/* Seleção de time */}
+          <Select value={selectedTeam || ""} onValueChange={setSelectedTeam}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione um Time" />
+            </SelectTrigger>
+            <SelectContent>
+              {rosters.map((roster) => (
+                <SelectItem key={roster.owner_id} value={roster.owner_id}>
+                  {roster.owner_name || `Time ${roster.owner_id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-                  {/* Exibição das pontuações */}
-                  <div className="flex space-x-4">
-                    {YEARS.map((year) => (
-                      <div key={year} className="text-center">
-                        <span className="block font-medium">{year}</span>
-                        <span className="text-muted-foreground text-sm">
-                          {player.scores[year] || "N/A"}
-                        </span>
-                      </div>
-                    ))}
+          {/* Lista de jogadores */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Jogadores ({filteredPlayers.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredPlayers.map((player) => (
+                <div key={player.player_id} className="p-4 border-b">
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="font-medium">
+                        {player.first_name} {player.last_name} ({player.position})
+                      </p>
+                      <p className="text-muted-foreground">{player.team}</p>
+                    </div>
+                    <div>
+                      Pontuações:
+                      {YEARS.map((year) => (
+                        <p key={year}>
+                          {year}: {player.scores[year] || "N/A"}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 };
