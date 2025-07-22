@@ -13,63 +13,53 @@ serve(async (req) => {
 
   try {
     console.log("Sleeper Players function called");
-    console.log("Fetching NFL players data from Sleeper API");
 
-    // Fetch players from Sleeper API
+    /** =========================
+     * 1. Fetch NFL Players Data
+     * ========================= */
     const playersResponse = await fetch("https://api.sleeper.app/v1/players/nfl");
     if (!playersResponse.ok) {
-      const errorText = await playersResponse.text();
-      console.error("Sleeper API error:", playersResponse.status, errorText);
-      throw new Error(`Sleeper API error: ${playersResponse.status}`);
+      console.error("Error fetching players:", playersResponse.status);
+      throw new Error(`Error fetching players: ${playersResponse.status}`);
     }
     const players = await playersResponse.json();
-    console.log("Players data received, total count:", Object.keys(players || {}).length);
+    console.log(`Players data fetched: ${Object.keys(players).length} players`);
 
-    // Fetch scores for multiple years
-    const YEARS = [2020, 2021, 2022, 2023, 2024, 2025]; // Anos definidos
-    const allScores: Record<string, any> = {};
-
-    for (const year of YEARS) {
-      console.log(`Fetching scores for year ${year}`);
-      const scoresResponse = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${year}`);
-      if (!scoresResponse.ok) {
-        const errorText = await scoresResponse.text();
-        console.error(`Scores API error for year ${year}:`, scoresResponse.status, errorText);
-        throw new Error(`Scores API error for year ${year}: ${scoresResponse.status}`);
-      }
-
-      const yearScores = await scoresResponse.json();
-      console.log(`Scores for year ${year} received, count: ${Object.keys(yearScores || {}).length}`);
-
-      allScores[year] = yearScores; // Salva as pontuações por ano
+    /** =========================
+     * 2. Fetch Scores for 2023
+     * (outras temporadas podem ser adicionadas depois)
+     * ========================= */
+    const scoresResponse = await fetch("https://api.sleeper.app/v1/stats/nfl/regular/2023");
+    if (!scoresResponse.ok) {
+      console.error("Error fetching scores:", scoresResponse.status);
+      throw new Error(`Error fetching scores: ${scoresResponse.status}`);
     }
+    const scores = await scoresResponse.json();
+    console.log(`Scores data fetched for 2023: ${Object.keys(scores || {}).length} players`);
 
-    console.log("All scores fetched for all years.");
-
-    // Combine players with scores
+    /** =========================
+     * 3. Combine Players & Scores
+     * ========================= */
     const playersWithScores = Object.keys(players).reduce((acc, playerId) => {
       const player = players[playerId];
-      const scores = {};
-
-      YEARS.forEach((year) => {
-        const yearScores = allScores[year] || {};
-        const playerYearScores = yearScores[playerId] || {}; // Pega pontuação do jogador no ano
-
-        scores[year] = playerYearScores.pts_ppr || 0; // Usa PPR (ou outro sistema de pontuação)
-      });
+      const playerScores = scores[playerId] || {}; // Pontuação do jogador (se houver)
 
       acc[playerId] = {
-        ...player,
-        scores, // Adiciona as pontuações completas
+        ...player, // Dados básicos do jogador
+        scores: {
+          "2023": playerScores.pts_ppr || 0, // Apenas pontuação PPR para 2023, ajustável
+        },
       };
-
       return acc;
     }, {});
 
-    console.log("Final combined player data:", playersWithScores);
+    console.log("Players with scores combined successfully");
 
+    /** =========================
+     * 4. Return Data
+     * ========================= */
     return new Response(
-      JSON.stringify(playersWithScores),
+      JSON.stringify(playersWithScores), // Retorna os jogadores combinados com as pontuações
       {
         headers: {
           ...corsHeaders,
