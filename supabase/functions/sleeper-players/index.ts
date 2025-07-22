@@ -12,22 +12,32 @@ serve(async (req) => {
 
   try {
     console.log("🏈 Sleeper Players function called");
-    const currentYear = 2023; // Você pode ajustar o ano aqui
+    const currentYear = 2023; // O ano que queremos para pontuações
 
     /** ============================
      * 1. Buscar dados de jogadores
      * ============================ */
-    console.log("🔄 Fetching players data...");
+    console.log("🔄 Buscando jogadores...");
     const playersResponse = await fetch("https://api.sleeper.app/v1/players/nfl");
     if (!playersResponse.ok) {
-      throw new Error(`Erro ao buscar dados dos jogadores: ${playersResponse.status}`);
+      throw new Error(`Erro ao buscar jogadores: ${playersResponse.status}`);
     }
     const players = await playersResponse.json();
 
     /** ============================
-     * 2. Buscar pontuações (Half-PPR)
+     * 2. Buscar dados de times (rosters)
      * ============================ */
-    console.log("🔄 Fetching player scores...");
+    console.log("🔄 Buscando times...");
+    const rostersResponse = await fetch("Seu endpoint aqui para rosters"); // Insira a URL de rosters correta
+    if (!rostersResponse.ok) {
+      throw new Error(`Erro ao buscar times: ${rostersResponse.status}`);
+    }
+    const rosters = await rostersResponse.json();
+
+    /** ============================
+     * 3. Buscar pontuações de jogadores
+     * ============================ */
+    console.log("🔄 Buscando pontuações...");
     const scoresResponse = await fetch(
       `https://api.sleeper.app/v1/stats/nfl/regular/${currentYear}`
     );
@@ -37,46 +47,57 @@ serve(async (req) => {
     const scores = await scoresResponse.json();
 
     /** ============================
-     * 3. Combinar jogadores e pontuações
+     * 4. Combinar dados
      * ============================ */
-    console.log("🔄 Combining players with scores...");
     const playersWithScores = Object.keys(players).reduce((acc, playerId) => {
       const player = players[playerId];
       const playerScores = scores[playerId] || {};
 
       acc[playerId] = {
-        player_id: player.player_id,
-        full_name: `${player.first_name} ${player.last_name}`,
+        player_id: playerId,
+        first_name: player.first_name,
+        last_name: player.last_name,
         position: player.position || "N/A",
         team: player.team || "N/A",
         scores: {
-          [currentYear]: playerScores.pts_half_ppr || 0, // HALF-PPR
+          [currentYear]: playerScores.pts_half_ppr || 0, // Usa o campo HALF-PPR
         },
       };
 
       return acc;
     }, {});
 
-    console.log("✅ Players successfully combined with scores!");
+    console.log("✅ Dados combinados com sucesso!");
 
     /** ============================
-     * 4. Retornar os dados
+     * 5. Retornar os dados
      * ============================ */
-    return new Response(JSON.stringify(playersWithScores), {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        rosters,
+        players: playersWithScores,
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (error) {
-    console.error("❌ Error in function:", error.message);
+    console.error("❌ Erro na função sleeper-players:", error.message);
 
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({
+        error: error.message,
+      }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 500,
+      }
+    );
   }
 });
