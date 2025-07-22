@@ -3,14 +3,14 @@ import { TeamSection } from "@/components/team/TeamSection";
 import { LoadingSkeleton } from "@/components/team/LoadingSkeleton";
 import { TeamHeader } from "@/components/team/TeamHeader";
 
-/** Mapa de Posições Agrupadas **/
+// Mapa de Posições Agrupadas
 const positionGroups = {
   DB: ["CB", "S"], // Defensive Backs
   DL: ["DE", "DT", "DL"], // Defensive Line
   LB: ["LB"], // Linebackers
 };
 
-/** Ordem de Exibição das Posições **/
+// Ordem de Exibição das Posições
 const positionOrder = [
   "QB",   // Quarterbacks
   "RB",   // Running Backs
@@ -24,8 +24,9 @@ const positionOrder = [
   "DB",   // Defensive Backs
 ];
 
-/** Função para Agrupamento de Posições */
+// Função para Agrupamento de Posições
 function getGroupedPosition(position) {
+  // Verifica se a posição pertence a algum grupo
   for (const group in positionGroups) {
     if (positionGroups[group].includes(position)) {
       return group; // Retorna a posição agrupada (como "DB" ou "DL")
@@ -34,7 +35,7 @@ function getGroupedPosition(position) {
   return position; // Retorna a posição original se não estiver no mapa
 }
 
-/** Função para Ordenar Jogadores Baseado na Ordem Desejada */
+// Função para Ordenar Jogadores Baseado na Ordem Desejada
 function sortByPosition(playerA, playerB, playersData) {
   const positionA = playersData[playerA]?.position || "N/A"; // Posição do jogador A
   const positionB = playersData[playerB]?.position || "N/A"; // Posição do jogador B
@@ -85,7 +86,7 @@ export default function MyTeam() {
     );
   }
 
-  // Processar o agrupamento e ordenação de posições
+  // Processa o agrupamento e ordenação de posições
   const groupedPlayersData = Object.keys(playersData).reduce((acc, playerId) => {
     const player = playersData[playerId];
     const groupedPosition = getGroupedPosition(player.position || "N/A"); // Agrupa a posição do jogador
@@ -93,7 +94,7 @@ export default function MyTeam() {
     return acc;
   }, {});
 
-  // Ordenar jogadores de cada categoria com base em posições
+  // Ordena jogadores de cada categoria com base nas posições
   const sortedStarters = [...starters].sort((a, b) =>
     sortByPosition(a, b, groupedPlayersData)
   );
@@ -117,26 +118,26 @@ export default function MyTeam() {
     <div className="container mx-auto p-6">
       <TeamHeader teamOwner={teamOwner} />
 
-      {/* Cada categoria será exibida ordenada */}
+      {/* Exibição do time por categorias */}
       <TeamSection
         title={`Starters (${sortedStarters.length})`}
         playerIds={sortedStarters}
-        playersData={groupedPlayersData} // Dados com posições agrupadas
+        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
       <TeamSection
         title={`Bench (${sortedBench.length})`}
         playerIds={sortedBench}
-        playersData={groupedPlayersData} // Dados com posições agrupadas
+        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
       <TeamSection
         title={`Injured Reserve (${sortedInjuredReserve.length})`}
         playerIds={sortedInjuredReserve}
-        playersData={groupedPlayersData} // Dados com posições agrupadas
+        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
       <TeamSection
         title={`Taxi Squad (${sortedTaxi.length})`}
         playerIds={sortedTaxi}
-        playersData={groupedPlayersData} // Dados com posições agrupadas
+        playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
     </div>
   );
