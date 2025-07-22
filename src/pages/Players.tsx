@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 import { useSleeperData } from "@/hooks/useSleeperData";
 import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 
-// Posições do jogador (grupos principais)
 const positionGroups = {
   QB: ["QB"],
   RB: ["RB"],
@@ -22,14 +21,13 @@ const YEARS = [2025, 2024, 2023, 2022, 2021, 2020];
 
 const Players = () => {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null); // Time selecionado
-  const [selectedPosition, setSelectedPosition] = useState<string>("all"); // Posição selecionada
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<string>("all");
   const [playersData, setPlayersData] = useState<Record<string, SleeperPlayer>>({});
-  const [rosters, setRosters] = useState<SleeperRoster[]>([]); // Lista de todos os times
+  const [rosters, setRosters] = useState<SleeperRoster[]>([]);
   const [users, setUsers] = useState<SleeperUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Carrega jogadores e times ao conectar-se à liga
   useEffect(() => {
     const loadPlayersAndTeams = async () => {
       if (!state.isConnected || !state.currentLeague) return;
@@ -37,13 +35,13 @@ const Players = () => {
       setLoading(true);
 
       try {
-        // Faz requisição ao backend
         const [rostersData, playersResponse, usersResponse] = await Promise.all([
           fetchRosters(state.currentLeague.league_id),
           fetchPlayers(),
           fetchUsers(state.currentLeague.league_id),
         ]);
 
+        console.log("🎯 Dados dos Jogadores Recebidos:", playersResponse); // Log pontuações reais
         setRosters(rostersData || []);
         setUsers(usersResponse || []);
         setPlayersData(playersResponse || {});
@@ -57,12 +55,10 @@ const Players = () => {
     loadPlayersAndTeams();
   }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers, fetchUsers]);
 
-  // Buscar jogadores do time selecionado
   const selectedTeamPlayers = selectedTeam
     ? rosters.find((roster) => roster.owner_id === selectedTeam)?.players || []
     : [];
 
-  // Filtrar jogadores pela posição selecionada
   const filteredPlayers = useMemo(() => {
     if (selectedPosition === "all") {
       return selectedTeamPlayers;
@@ -73,11 +69,14 @@ const Players = () => {
     );
   }, [selectedTeamPlayers, selectedPosition, playersData]);
 
-  // Gerar pontuações exibíveis
-  const getPlayerScores = (playerId: string) => {
-    const scores = playersData[playerId]?.scores || {}; // Verificar se existem pontuações
+  const getTeamName = (ownerId: string): string => {
+    const user = users.find((u) => u.user_id === ownerId);
+    return user?.metadata.team_name || user?.display_name || "Nome do Time Indisponível";
+  };
 
-    return YEARS.map((year) => scores[year] || "N/A"); // Retornar "N/A" para anos sem pontuação
+  const getPlayerScores = (playerId: string) => {
+    const scores = playersData[playerId]?.scores || {};
+    return YEARS.map((year) => scores[year] || "N/A");
   };
 
   return (
@@ -88,7 +87,6 @@ const Players = () => {
       </div>
 
       <div className="mb-6 space-y-4">
-        {/* Dropdown para seleção de times */}
         {loading ? (
           <div className="flex items-center text-muted-foreground gap-2">
             <Loader2 className="animate-spin h-4 w-4" />
@@ -102,14 +100,13 @@ const Players = () => {
             <SelectContent>
               {rosters.map((roster) => (
                 <SelectItem key={roster.owner_id} value={roster.owner_id}>
-                  Time {roster.owner_id} {/* Adapte para exibir nomes reais, se disponível */}
+                  {getTeamName(roster.owner_id)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         )}
 
-        {/* Dropdown para seleção de posições */}
         <Select value={selectedPosition} onValueChange={setSelectedPosition}>
           <SelectTrigger className="w-full max-w-md">
             <SelectValue placeholder="Selecione uma Posição" />
@@ -125,7 +122,6 @@ const Players = () => {
         </Select>
       </div>
 
-      {/* Lista de jogadores */}
       <Card>
         <CardHeader>
           <CardTitle>Jogadores ({filteredPlayers.length})</CardTitle>
@@ -155,7 +151,6 @@ const Players = () => {
                         <span>{player.position || "Posição não disponível"}</span>
                       </div>
                     </div>
-                    {/* Exibição das pontuações */}
                     <div className="flex space-x-4">
                       {getPlayerScores(player.player_id).map((score, index) => (
                         <div key={YEARS[index]} className="text-center">
