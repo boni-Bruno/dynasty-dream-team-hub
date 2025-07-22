@@ -12,79 +12,71 @@ serve(async (req) => {
 
   try {
     console.log("🏈 Sleeper Players function called");
+    const currentYear = 2023; // Você pode ajustar o ano aqui
 
     /** ============================
-     * 1. Fetch Players Data
+     * 1. Buscar dados de jogadores
      * ============================ */
-    console.log("🔄 Fetching NFL players data...");
+    console.log("🔄 Fetching players data...");
     const playersResponse = await fetch("https://api.sleeper.app/v1/players/nfl");
     if (!playersResponse.ok) {
-      console.error("❌ Error fetching players:", playersResponse.status);
-      throw new Error(`Error fetching players: ${playersResponse.status}`);
+      throw new Error(`Erro ao buscar dados dos jogadores: ${playersResponse.status}`);
     }
     const players = await playersResponse.json();
-    console.log(`✅ Players fetched: ${Object.keys(players).length}`);
 
     /** ============================
-     * 2. Fetch Scores Data (2023)
+     * 2. Buscar pontuações (Half-PPR)
      * ============================ */
-    console.log("🔄 Fetching scores for 2023...");
-    const scoresResponse = await fetch("https://api.sleeper.app/v1/stats/nfl/regular/2023");
+    console.log("🔄 Fetching player scores...");
+    const scoresResponse = await fetch(
+      `https://api.sleeper.app/v1/stats/nfl/regular/${currentYear}`
+    );
     if (!scoresResponse.ok) {
-      console.error("❌ Error fetching scores:", scoresResponse.status);
-      throw new Error(`Error fetching scores: ${scoresResponse.status}`);
+      throw new Error(`Erro ao buscar pontuações: ${scoresResponse.status}`);
     }
-    const scores = await scoresResponse.json(); // Obtenção de todas as pontuações
-    console.log(`✅ Scores fetched for 2023: ${Object.keys(scores || {}).length}`);
+    const scores = await scoresResponse.json();
 
     /** ============================
-     * 3. Combine Players and Scores
+     * 3. Combinar jogadores e pontuações
      * ============================ */
-    console.log("🔗 Combining players with scores...");
+    console.log("🔄 Combining players with scores...");
     const playersWithScores = Object.keys(players).reduce((acc, playerId) => {
-      const player = players[playerId]; // Dados básicos do jogador
-      const playerScores = scores[playerId] || {}; // Dados de pontuação do jogador para 2023
-
-      // Adicione a pontuação HALF-PPR (ou calcula manualmente se necessário)
-      const halfPPR = playerScores.pts_half_ppr || 0;
+      const player = players[playerId];
+      const playerScores = scores[playerId] || {};
 
       acc[playerId] = {
-        ...player,
+        player_id: player.player_id,
+        full_name: `${player.first_name} ${player.last_name}`,
+        position: player.position || "N/A",
+        team: player.team || "N/A",
         scores: {
-          "2023": halfPPR, // Retorna apenas 2023; ajuste para mais anos, se necessário
+          [currentYear]: playerScores.pts_half_ppr || 0, // HALF-PPR
         },
       };
 
       return acc;
     }, {});
 
-    console.log("✅ Players combined with scores successfully!");
+    console.log("✅ Players successfully combined with scores!");
 
     /** ============================
-     * 4. Return Response
+     * 4. Retornar os dados
      * ============================ */
-    return new Response(
-      JSON.stringify(playersWithScores),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    return new Response(JSON.stringify(playersWithScores), {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+    });
   } catch (error) {
-    console.error("❌ Error in Sleeper Players function:", error);
+    console.error("❌ Error in function:", error.message);
 
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Internal server error",
-      }),
-      {
-        headers: { 
-          ...corsHeaders, 
-          "Content-Type": "application/json" 
-        },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+      status: 500,
+    });
   }
 });
