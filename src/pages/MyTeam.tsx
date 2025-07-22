@@ -10,21 +10,21 @@ const positionGroups = {
   LB: ["LB"], // Linebackers
 };
 
-/** Ordem de Apresentação das Posições **/
+/** Ordem de Exibição das Posições **/
 const positionOrder = [
-  "QB",
-  "RB",
-  "WR",
-  "TE",
+  "QB",   // Quarterbacks
+  "RB",   // Running Backs
+  "WR",   // Wide Receivers
+  "TE",   // Tight Ends
   "W/R/T", // Flex
-  "IDP", // Individual Defensive Players
-  "K",
-  "DL",
-  "LB",
-  "DB",
+  "IDP",  // Individual Defensive Players
+  "K",    // Kickers
+  "DL",   // Defensive Line
+  "LB",   // Linebackers
+  "DB",   // Defensive Backs
 ];
 
-/** Função para agrupar uma posição no respectivo grupo (DB, DL, etc.) **/
+/** Função para Agrupamento de Posições */
 function getGroupedPosition(position) {
   for (const group in positionGroups) {
     if (positionGroups[group].includes(position)) {
@@ -34,7 +34,7 @@ function getGroupedPosition(position) {
   return position; // Retorna a posição original se não estiver no mapa
 }
 
-/** Função para ordenação de posições **/
+/** Função para Ordenação com Base na Prioridade da Posição */
 function sortByPosition(playerA, playerB, playersData) {
   const positionA = playersData[playerA]?.position || "N/A";
   const positionB = playersData[playerB]?.position || "N/A";
@@ -43,11 +43,11 @@ function sortByPosition(playerA, playerB, playersData) {
   const groupedPositionA = getGroupedPosition(positionA);
   const groupedPositionB = getGroupedPosition(positionB);
 
-  // Usa o índice de `positionOrder` para ordenar
+  // Usa o índice de `positionOrder` para comparar a prioridade
   const indexA = positionOrder.indexOf(groupedPositionA);
   const indexB = positionOrder.indexOf(groupedPositionB);
 
-  // Posições que não estão na ordem definida vão para o final
+  // Se as posições não estão na ordem definida, colocamos no final
   if (indexA === -1 && indexB === -1) return 0; // Mantém a ordem original
   if (indexA === -1) return 1; // `A` vai para o final
   if (indexB === -1) return -1; // `B` vai para o final
