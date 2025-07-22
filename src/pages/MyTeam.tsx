@@ -1,3 +1,4 @@
+
 import { useTeamData } from "@/hooks/useTeamData";
 import { TeamSection } from "@/components/team/TeamSection";
 import { LoadingSkeleton } from "@/components/team/LoadingSkeleton";
@@ -118,7 +119,9 @@ export default function MyTeam() {
     <div className="container mx-auto p-6">
       <TeamHeader teamOwner={teamOwner} />
 
-      {/* Exibição do time por categorias */}
+      {
+      // Exibição do time por categorias 
+      }
       <TeamSection
         title={`Starters (${sortedStarters.length})`}
         playerIds={sortedStarters}
