@@ -11,72 +11,54 @@ serve(async (req) => {
   }
 
   try {
-    console.log("🏈 Sleeper Players function called");
-    const currentYear = 2023; // O ano que queremos para pontuações
+    console.log("Sleeper Players function called");
 
-    /** ============================
-     * 1. Buscar dados de jogadores
-     * ============================ */
-    console.log("🔄 Buscando jogadores...");
+    /** =========================
+     * 1. Fetch NFL Players Data
+     * ========================= */
     const playersResponse = await fetch("https://api.sleeper.app/v1/players/nfl");
     if (!playersResponse.ok) {
-      throw new Error(`Erro ao buscar jogadores: ${playersResponse.status}`);
+      console.error("Error fetching players:", playersResponse.status);
+      throw new Error(`Error fetching players: ${playersResponse.status}`);
     }
     const players = await playersResponse.json();
+    console.log(`Players data fetched: ${Object.keys(players).length} players`);
 
-    /** ============================
-     * 2. Buscar dados de times (rosters)
-     * ============================ */
-    console.log("🔄 Buscando times...");
-    const rostersResponse = await fetch("Seu endpoint aqui para rosters"); // Insira a URL de rosters correta
-    if (!rostersResponse.ok) {
-      throw new Error(`Erro ao buscar times: ${rostersResponse.status}`);
-    }
-    const rosters = await rostersResponse.json();
-
-    /** ============================
-     * 3. Buscar pontuações de jogadores
-     * ============================ */
-    console.log("🔄 Buscando pontuações...");
-    const scoresResponse = await fetch(
-      `https://api.sleeper.app/v1/stats/nfl/regular/${currentYear}`
-    );
+    /** =========================
+     * 2. Fetch Scores for 2023
+     * (outras temporadas podem ser adicionadas depois)
+     * ========================= */
+    const scoresResponse = await fetch("https://api.sleeper.app/v1/stats/nfl/regular/2023");
     if (!scoresResponse.ok) {
-      throw new Error(`Erro ao buscar pontuações: ${scoresResponse.status}`);
+      console.error("Error fetching scores:", scoresResponse.status);
+      throw new Error(`Error fetching scores: ${scoresResponse.status}`);
     }
     const scores = await scoresResponse.json();
+    console.log(`Scores data fetched for 2023: ${Object.keys(scores || {}).length} players`);
 
-    /** ============================
-     * 4. Combinar dados
-     * ============================ */
+    /** =========================
+     * 3. Combine Players & Scores
+     * ========================= */
     const playersWithScores = Object.keys(players).reduce((acc, playerId) => {
       const player = players[playerId];
-      const playerScores = scores[playerId] || {};
+      const playerScores = scores[playerId] || {}; // Pontuação do jogador (se houver)
 
       acc[playerId] = {
-        player_id: playerId,
-        first_name: player.first_name,
-        last_name: player.last_name,
-        position: player.position || "N/A",
-        team: player.team || "N/A",
+        ...player, // Dados básicos do jogador
         scores: {
-          [currentYear]: playerScores.pts_half_ppr || 0, // Usa o campo HALF-PPR
+          "2023": playerScores.pts_ppr || 0, // Apenas pontuação PPR para 2023
         },
       };
-
       return acc;
     }, {});
 
-    console.log("✅ Dados combinados com sucesso!");
+    console.log("Players with scores combined successfully");
 
-    /** ============================
-     * 5. Retornar os dados
-     * ============================ */
+    /** =========================
+     * 4. Return Data
+     * ========================= */
     return new Response(
-      JSON.stringify({
-        rosters,
-        players: playersWithScores,
-      }),
+      JSON.stringify(playersWithScores), // Retorna os jogadores combinados com as pontuações
       {
         headers: {
           ...corsHeaders,
@@ -85,18 +67,18 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("❌ Erro na função sleeper-players:", error.message);
+    console.error("Error in sleeper-players function:", error);
 
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: error.message || "Internal server error",
       }),
       {
+        status: 500,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
         },
-        status: 500,
       }
     );
   }
