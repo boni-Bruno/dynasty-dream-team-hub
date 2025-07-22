@@ -15,9 +15,7 @@ serve(async (req) => {
     console.log("Sleeper Players function called");
     console.log("Fetching NFL players data from Sleeper API");
 
-    /** ---------------------------
-     * Fetch players from Sleeper API
-     * -------------------------- */
+    // Fetch players from Sleeper API
     const playersResponse = await fetch("https://api.sleeper.app/v1/players/nfl");
     if (!playersResponse.ok) {
       const errorText = await playersResponse.text();
@@ -27,11 +25,9 @@ serve(async (req) => {
     const players = await playersResponse.json();
     console.log("Players data received, total count:", Object.keys(players || {}).length);
 
-    /** ---------------------------
-     * Fetch scores for multiple years
-     * -------------------------- */
+    // Fetch scores for multiple years
     const YEARS = [2020, 2021, 2022, 2023, 2024, 2025]; // Anos definidos
-    const allScores = {}; // Armazenar pontuações de todos os anos
+    const allScores: Record<string, any> = {};
 
     for (const year of YEARS) {
       console.log(`Fetching scores for year ${year}`);
@@ -45,37 +41,33 @@ serve(async (req) => {
       const yearScores = await scoresResponse.json();
       console.log(`Scores for year ${year} received, count: ${Object.keys(yearScores || {}).length}`);
 
-      // Salva pontuações do ano específico no objeto
-      allScores[year] = yearScores;
+      allScores[year] = yearScores; // Salva as pontuações por ano
     }
 
-    /** ---------------------------
-     * Combine players with scores
-     * -------------------------- */
-    console.log("Combining player data with scores...");
+    console.log("All scores fetched for all years.");
+
+    // Combine players with scores
     const playersWithScores = Object.keys(players).reduce((acc, playerId) => {
       const player = players[playerId];
       const scores = {};
 
-      // Adicionar pontuações para todos os anos no campo "scores"
       YEARS.forEach((year) => {
         const yearScores = allScores[year] || {};
         const playerYearScores = yearScores[playerId] || {}; // Pega pontuação do jogador no ano
 
-        scores[year] = playerYearScores.pts_ppr || 0; // Usar apenas PPR (ou ajustar caso necessário)
+        scores[year] = playerYearScores.pts_ppr || 0; // Usa PPR (ou outro sistema de pontuação)
       });
 
       acc[playerId] = {
-        ...player, // Junta informações do jogador
-        scores, // Junta pontuações completas
+        ...player,
+        scores, // Adiciona as pontuações completas
       };
 
       return acc;
     }, {});
 
-    /** ---------------------------
-     * Return combined data
-     * -------------------------- */
+    console.log("Final combined player data:", playersWithScores);
+
     return new Response(
       JSON.stringify(playersWithScores),
       {
