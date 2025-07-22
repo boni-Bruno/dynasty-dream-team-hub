@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useSleeperData } from "@/hooks/useSleeperData";
 import { SleeperPlayer, SleeperRoster, SleeperUser } from "@/types/sleeper";
 
+// Agrupamento de posições usado no seletor
 const positionGroups = {
   QB: ["QB"],
   RB: ["RB"],
@@ -16,7 +17,8 @@ const positionGroups = {
   DB: ["CB", "DB", "S"],
 };
 
-const YEARS = [2023]; // Só mostra as pontuações para 2023
+// Define o ano fixo que será apresentado na página
+const YEAR = 2024;
 
 const Players = () => {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
@@ -27,6 +29,7 @@ const Players = () => {
   const [users, setUsers] = useState<SleeperUser[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Carregar informações dos jogadores e times
   useEffect(() => {
     const loadPlayersAndTeams = async () => {
       if (!state.isConnected || !state.currentLeague) return;
@@ -53,10 +56,12 @@ const Players = () => {
     loadPlayersAndTeams();
   }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers, fetchUsers]);
 
+  // Filtrar jogadores pelo time selecionado
   const selectedTeamPlayers = selectedTeam
     ? rosters.find((roster) => roster.owner_id === selectedTeam)?.players || []
     : [];
 
+  // Aplicar filtros (posição) nos jogadores
   const filteredPlayers = useMemo(() => {
     if (selectedPosition === "all") {
       return selectedTeamPlayers;
@@ -67,21 +72,23 @@ const Players = () => {
     );
   }, [selectedTeamPlayers, selectedPosition, playersData]);
 
+  // Obter o nome do time
   const getTeamName = (ownerId: string): string => {
     const user = users.find((u) => u.user_id === ownerId);
     return user?.metadata.team_name || user?.display_name || "Nome do Time Indisponível";
   };
 
-  const getPlayerScores = (playerId: string) => {
-    const scores = playersData[playerId]?.scores || {};
-    return YEARS.map((year) => scores[year] || "N/A");
+  // Obter os pontos do jogador para o ano de 2024 (FPTS)
+  const getPlayerFPTS = (playerId: string) => {
+    const stats = playersData[playerId]?.stats || {};
+    return stats[YEAR] ? stats[YEAR].fpts || "N/A" : "N/A";
   };
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Jogadores por Time</h1>
-        <p className="text-muted-foreground">Selecione um time e posição para visualizar os jogadores e suas pontuações.</p>
+        <p className="text-muted-foreground">Selecione um time e posição para visualizar os jogadores e suas pontuações para {YEAR}.</p>
       </div>
 
       <div className="mb-6 space-y-4">
@@ -141,6 +148,7 @@ const Players = () => {
                 .filter(Boolean)
                 .map((player) => (
                   <div key={player.player_id} className="p-3 border rounded-lg flex justify-between items-center">
+                    {/* Informações do jogador */}
                     <div>
                       <h4 className="font-medium">
                         {player.first_name} {player.last_name}
@@ -149,13 +157,13 @@ const Players = () => {
                         <span>{player.position || "Posição não disponível"}</span>
                       </div>
                     </div>
-                    <div className="flex space-x-4">
-                      {getPlayerScores(player.player_id).map((score, index) => (
-                        <div key={YEARS[index]} className="text-center">
-                          <span className="block font-medium">{YEARS[index]}</span>
-                          <span className="text-muted-foreground text-sm">{score}</span>
-                        </div>
-                      ))}
+
+                    {/* Pontuações do jogador */}
+                    <div className="flex space-x-6">
+                      <div className="text-center">
+                        <span className="block font-medium">{YEAR}</span> {/* Ano */}
+                        <span className="text-muted-foreground text-sm">{getPlayerFPTS(player.player_id)} FPTS</span> {/* FPTS */}
+                      </div>
                     </div>
                   </div>
                 ))}
