@@ -3,20 +3,56 @@ import { TeamSection } from "@/components/team/TeamSection";
 import { LoadingSkeleton } from "@/components/team/LoadingSkeleton";
 import { TeamHeader } from "@/components/team/TeamHeader";
 
-/** Mapa de Agrupamento de Posições **/
+/** Mapa de Posições Agrupadas **/
 const positionGroups = {
-  DB: ["CB", "S"], // Defensive Backs (Cornerbacks e Safeties)
-  DL: ["DE", "DT", "DL"], // Defensive Line (Defensive Ends, Tackles e Lines)
+  DB: ["CB", "S"], // Defensive Backs
+  DL: ["DE", "DT", "DL"], // Defensive Line
   LB: ["LB"], // Linebackers
 };
 
+/** Ordem de Apresentação das Posições **/
+const positionOrder = [
+  "QB",
+  "RB",
+  "WR",
+  "TE",
+  "W/R/T", // Flex
+  "IDP", // Individual Defensive Players
+  "K",
+  "DL",
+  "LB",
+  "DB",
+];
+
+/** Função para agrupar uma posição no respectivo grupo (DB, DL, etc.) **/
 function getGroupedPosition(position) {
   for (const group in positionGroups) {
     if (positionGroups[group].includes(position)) {
-      return group; // Retorna a posição agrupada, como "DB" ou "DL"
+      return group; // Retorna a posição agrupada (como "DB" ou "DL")
     }
   }
   return position; // Retorna a posição original se não estiver no mapa
+}
+
+/** Função para ordenação de posições **/
+function sortByPosition(playerA, playerB, playersData) {
+  const positionA = playersData[playerA]?.position || "N/A";
+  const positionB = playersData[playerB]?.position || "N/A";
+
+  // Determina a posição agrupada
+  const groupedPositionA = getGroupedPosition(positionA);
+  const groupedPositionB = getGroupedPosition(positionB);
+
+  // Usa o índice de `positionOrder` para ordenar
+  const indexA = positionOrder.indexOf(groupedPositionA);
+  const indexB = positionOrder.indexOf(groupedPositionB);
+
+  // Posições que não estão na ordem definida vão para o final
+  if (indexA === -1 && indexB === -1) return 0; // Mantém a ordem original
+  if (indexA === -1) return 1; // `A` vai para o final
+  if (indexB === -1) return -1; // `B` vai para o final
+
+  return indexA - indexB; // Compara os índices para ordenar
 }
 
 export default function MyTeam() {
@@ -48,20 +84,34 @@ export default function MyTeam() {
     );
   }
 
-  // Processar o agrupamento das posições no playersData
+  // Processar o agrupamento e ordenação das posições no playersData
   const groupedPlayersData = Object.keys(playersData).reduce((acc, playerId) => {
     const player = playersData[playerId];
     const groupedPosition = getGroupedPosition(player.position || "N/A"); // Agrupa a posição do jogador
-    acc[playerId] = { ...player, position: groupedPosition }; // Sobrescreve no playersData com a posição agrupada
+    acc[playerId] = { ...player, position: groupedPosition }; // Sobrescreve com a posição agrupada
     return acc;
   }, {});
 
-  // Logs de depuração para verificar as categorias
-  console.log("Starters:", starters);
-  console.log("Bench:", bench);
-  console.log("Injured Reserve:", injuredReserve);
-  console.log("Taxi Squad:", taxi);
-  console.log("Players Agrupados:", groupedPlayersData);
+  // Ordenar os jogadores dentro de cada categoria
+  const sortedStarters = [...starters].sort((a, b) =>
+    sortByPosition(a, b, groupedPlayersData)
+  );
+  const sortedBench = [...bench].sort((a, b) =>
+    sortByPosition(a, b, groupedPlayersData)
+  );
+  const sortedInjuredReserve = [...injuredReserve].sort((a, b) =>
+    sortByPosition(a, b, groupedPlayersData)
+  );
+  const sortedTaxi = [...taxi].sort((a, b) =>
+    sortByPosition(a, b, groupedPlayersData)
+  );
+
+  // Logs de depuração
+  console.log("Ordenação e Agrupamento:");
+  console.log("Starters Ordenados:", sortedStarters);
+  console.log("Bench Ordenado:", sortedBench);
+  console.log("Injured Reserve Ordenado:", sortedInjuredReserve);
+  console.log("Taxi Squad Ordenado:", sortedTaxi);
 
   return (
     <div className="container mx-auto p-6">
@@ -69,23 +119,23 @@ export default function MyTeam() {
 
       {/* Exibição do time por categorias */}
       <TeamSection
-        title={`Starters (${starters.length})`} // Título com a quantidade
-        playerIds={starters}
+        title={`Starters (${sortedStarters.length})`}
+        playerIds={sortedStarters}
         playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
       <TeamSection
-        title={`Bench (${bench.length})`} // Título com a quantidade
-        playerIds={bench}
+        title={`Bench (${sortedBench.length})`}
+        playerIds={sortedBench}
         playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
       <TeamSection
-        title={`Injured Reserve (${injuredReserve.length})`} // Título com a quantidade
-        playerIds={injuredReserve}
+        title={`Injured Reserve (${sortedInjuredReserve.length})`}
+        playerIds={sortedInjuredReserve}
         playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
       <TeamSection
-        title={`Taxi Squad (${taxi.length})`} // Título com a quantidade
-        playerIds={taxi}
+        title={`Taxi Squad (${sortedTaxi.length})`}
+        playerIds={sortedTaxi}
         playersData={groupedPlayersData} // Usa os dados com posições agrupadas
       />
     </div>
