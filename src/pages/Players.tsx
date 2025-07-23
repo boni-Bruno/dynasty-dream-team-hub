@@ -20,6 +20,53 @@ const positionGroups = {
 // Define o ano fixo que será apresentado na página
 const YEAR = 2024;
 
+// Função para buscar pontuações no Fleaflicker
+const fetchFleaflickerFPTS = async (leagueId: string, year: number) => {
+  const weeks = 18; // Número máximo de semanas
+  const totalFPTS: Record<string, number> = {};
+
+  try {
+    for (let week = 1; week <= weeks; week++) {
+      // URL para buscar pontuação semanal
+      const url = `https://api.fleaflicker.com/FetchLeagueScoreboard?sport=NFL&league_id=${leagueId}&season=${year}&scoring_period=${week}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`Erro ao buscar pontuações da semana ${week}:`, response.statusText);
+        continue;
+      }
+
+      const data = await response.json();
+      if (!data.games) continue;
+
+      // Itera por todos os jogos da semana e soma os pontos
+      for (const game of data.games) {
+        const fantasyGameId = game.fantasy_game_id;
+
+        // Busca detalhes do jogo
+        const boxscoreUrl = `https://api.fleaflicker.com/FetchLeagueBoxscore?sport=NFL&league_id=${leagueId}&season=${year}&fantasy_game_id=${fantasyGameId}`;
+        const boxscoreResponse = await fetch(boxscoreUrl);
+        if (!boxscoreResponse.ok) continue;
+
+        const boxscoreData = await boxscoreResponse.json();
+        const addFPTS = (players: any[]) => {
+          players.forEach((player) => {
+            totalFPTS[player.player_id] = (totalFPTS[player.player_id] || 0) + player.fpts;
+          });
+        };
+
+        // Soma pontos do time da casa e do visitante
+        addFPTS(boxscoreData.home_team.players);
+        addFPTS(boxscoreData.away_team.players);
+      }
+    }
+
+    return totalFPTS;
+  } catch (error) {
+    console.error("Erro ao buscar dados do Fleaflicker:", error);
+    return {};
+  }
+};
+
 const Players = () => {
   const { state, fetchRosters, fetchPlayers, fetchUsers } = useSleeperData();
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
@@ -28,6 +75,7 @@ const Players = () => {
   const [rosters, setRosters] = useState<SleeperRoster[]>([]);
   const [users, setUsers] = useState<SleeperUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fleaflickerFPTS, setFleaflickerFPTS] = useState<Record<string, number>>({});
 
   // Carregar informações dos jogadores e times
   useEffect(() => {
@@ -56,6 +104,18 @@ const Players = () => {
     loadPlayersAndTeams();
   }, [state.isConnected, state.currentLeague, fetchRosters, fetchPlayers, fetchUsers]);
 
+  // Carregar FPTS diretamente do Fleaflicker
+  useEffect(() => {
+    const loadFleaflickerFPTS = async () => {
+      if (!state.currentLeague) return;
+
+      const fleaflickerData = await fetchFleaflickerFPTS(state.currentLeague.league_id, YEAR);
+      setFleaflickerFPTS(fleaflickerData);
+    };
+
+    if (!loading) loadFleaflickerFPTS();
+  }, [state.currentLeague, loading]);
+
   // Filtrar jogadores pelo time selecionado
   const selectedTeamPlayers = selectedTeam
     ? rosters.find((roster) => roster.owner_id === selectedTeam)?.players || []
@@ -80,8 +140,14 @@ const Players = () => {
 
   // Obter os pontos do jogador para o ano de 2024 (FPTS)
   const getPlayerFPTS = (playerId: string) => {
+    // Se os dados da Fleaflicker estiverem disponíveis
+    if (fleaflickerFPTS[playerId] !== undefined) {
+      return `${fleaflickerFPTS[playerId]} FPTS`;
+    }
+
+    // Caso contrário, busque nos dados do Sleeper
     const stats = playersData[playerId]?.stats || {};
-    return stats[YEAR] ? stats[YEAR].fpts || "N/A" : "N/A";
+    return stats[YEAR] ? `${stats[YEAR].fpts || "N/A"} FPTS` : "N/A";
   };
 
   return (
@@ -162,7 +228,7 @@ const Players = () => {
                     <div className="flex space-x-6">
                       <div className="text-center">
                         <span className="block font-medium">{YEAR}</span> {/* Ano */}
-                        <span className="text-muted-foreground text-sm">{getPlayerFPTS(player.player_id)} FPTS</span> {/* FPTS */}
+                        <span className="text-muted-foreground text-sm">{getPlayerFPTS(player.player_id)}</span> {/* FPTS */}
                       </div>
                     </div>
                   </div>
