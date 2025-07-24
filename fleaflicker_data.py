@@ -1,24 +1,41 @@
-from fleaflicker import Fleaflicker
+import requests  # Biblioteca para fazer chamadas HTTP
 
 # Configurações da sua liga
-LEAGUE_ID = "1181975218791636992"  # Substitua pelo ID da sua liga
+LEAGUE_ID = "1181975218791636992"  # ID da sua liga Fleaflicker
 YEAR = 2024  # Ano da temporada
+WEEK = 1  # Semana para buscar as pontuações (exemplo: semana 1)
 
-# Inicializa o cliente do Fleaflicker
-client = Fleaflicker(LEAGUE_ID)
-
-# Função para obter os dados dos jogadores e pontuações
-def get_players_scores():
+# URL da API para buscar os dados do Fleaflicker
+def get_fleaflicker_scores(league_id, season, scoring_period):
+    url = f"https://www.fleaflicker.com/api/FetchLeagueScoreboard?sport=NFL&league_id={league_id}&season={season}&scoring_period={scoring_period}"
     try:
-        # Obtém jogadores da liga
-        players = client.players()  # Retorna os jogadores
-        
-        # Exibe os jogadores com os pontos
-        for player in players:
-            print(f"{player['name']}: {player['points']} pontos")  # Nome e pontos de cada jogador
-    except Exception as e:
-        print(f"Erro ao buscar dados: {e}")
+        # Fazendo a requisição à API
+        response = requests.get(url)
+        response.raise_for_status()  # Lança um erro se a requisição falhar
+        data = response.json()  # Converte a resposta para JSON
 
-# Chama a função para buscar os dados dos jogadores
+        # Retorna os dados extraídos da API
+        return data
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao acessar a API Fleaflicker: {e}")
+        return None
+
+# Função principal para exibir os dados
+def main():
+    # Faz a chamada à API
+    data = get_fleaflicker_scores(LEAGUE_ID, YEAR, WEEK)
+
+    # Verifica se os dados foram retornados com sucesso
+    if data is not None:
+        # Exibindo informações básicas dos jogos
+        print("\nDados dos jogos retornados pela API do Fleaflicker:")
+        for game in data.get("games", []):  # Obtém a lista de jogos
+            home_team = game["home"]["name"]
+            away_team = game["away"]["name"]
+            print(f"{home_team} VS {away_team}")
+    else:
+        print("Não foi possível obter os dados da API.")
+
+# Executa o script
 if __name__ == "__main__":
-    get_players_scores()
+    main()
